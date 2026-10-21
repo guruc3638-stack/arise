@@ -14,45 +14,46 @@ const ARISE_DATA = {
     state: "Maharashtra",
     avatar: "RD",
     avatarBg: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)",
-    verifiedXp: 3420, // Strictly from judge-confirmed solves
+    verifiedXp: 0, // Starts at 0 until judge accepts problem solution
     rank: {
-      college: 3,
-      district: 8,
-      maharashtra: 14,
-      india: 86
+      college: null,
+      district: null,
+      maharashtra: null,
+      india: null
     },
-    rankMovement: "+2", // ▲ 2
+    rankDisplay: "Unranked",
+    rankMovement: "—",
     solvedStats: {
-      total: 48,
-      easy: 26,
-      medium: 18,
-      hard: 4
+      total: 0,
+      easy: 0,
+      medium: 0,
+      hard: 0
     },
-    acceptanceRate: "72.4%",
-    coursesCompleted: 2,
+    acceptanceRate: "—",
+    coursesCompleted: 0,
     privacySetting: "public", // 'public' | 'friends' | 'private'
     joinedDate: "October 2025"
   },
 
-  // 17 DSA Topics with counts and distributions
+  // 17 DSA Topics with counts and distributions (starts at 0 solved for all students)
   topics: [
-    { id: "arrays", name: "Arrays", desc: "Contiguous memory, two pointers, sliding window, prefix sums", total: 42, solved: 28, easy: 16, medium: 20, hard: 6 },
-    { id: "strings", name: "Strings", desc: "Pattern matching, character counting, anagrams, palindrome logic", total: 36, solved: 22, easy: 14, medium: 16, hard: 6 },
-    { id: "linked-lists", name: "Linked Lists", desc: "Singly, doubly, cycle detection, reversing, fast & slow pointers", total: 28, solved: 19, easy: 12, medium: 12, hard: 4 },
-    { id: "stacks", name: "Stacks", desc: "LIFO structures, monotonic stacks, parentheses validation, evaluations", total: 24, solved: 18, easy: 10, medium: 10, hard: 4 },
-    { id: "queues", name: "Queues", desc: "FIFO buffers, double-ended queues, circular queues, monotonic queues", total: 20, solved: 14, easy: 8, medium: 9, hard: 3 },
-    { id: "hashing", name: "Hashing", desc: "Hash maps, hash sets, collision resolution, frequency tables", total: 32, solved: 24, easy: 14, medium: 14, hard: 4 },
-    { id: "recursion", name: "Recursion", desc: "Base cases, recurrence relations, call stack, divide & conquer", total: 22, solved: 15, easy: 8, medium: 10, hard: 4 },
-    { id: "sorting", name: "Sorting", desc: "Quick sort, merge sort, heap sort, counting sort, comparator logic", total: 18, solved: 15, easy: 8, medium: 8, hard: 2 },
-    { id: "searching", name: "Searching", desc: "Binary search on arrays, binary search on answer spaces", total: 26, solved: 17, easy: 9, medium: 13, hard: 4 },
-    { id: "trees", name: "Trees", desc: "Binary trees, tree traversals (in/pre/post/level), LCA, path sums", total: 38, solved: 21, easy: 12, medium: 18, hard: 8 },
-    { id: "bst", name: "Binary Search Trees", desc: "BST invariants, insertion, deletion, floor, ceil, validation", total: 22, solved: 13, easy: 8, medium: 11, hard: 3 },
-    { id: "heaps", name: "Heaps", desc: "Min/max heaps, priority queues, top-K elements, streaming medians", total: 24, solved: 12, easy: 6, medium: 13, hard: 5 },
-    { id: "graphs", name: "Graphs", desc: "BFS, DFS, topological sort, Dijkstra, Bellman-Ford, Kruskal/Prim", total: 40, solved: 16, easy: 8, medium: 22, hard: 10 },
-    { id: "greedy", name: "Greedy Algorithms", desc: "Locally optimal choices, interval scheduling, Huffman coding", total: 25, solved: 14, easy: 8, medium: 12, hard: 5 },
-    { id: "dp", name: "Dynamic Programming", desc: "Optimal substructure, overlapping subproblems, 1D/2D DP, knapsack", total: 48, solved: 18, easy: 8, medium: 24, hard: 16 },
-    { id: "backtracking", name: "Backtracking", desc: "State-space tree exploration, pruning, N-Queens, Sudoku solver", total: 20, solved: 8, easy: 4, medium: 11, hard: 5 },
-    { id: "tries", name: "Tries", desc: "Prefix trees, auto-complete queries, XOR maximum pairs", total: 16, solved: 6, easy: 4, medium: 8, hard: 4 }
+    { id: "arrays", name: "Arrays", desc: "Contiguous memory, two pointers, sliding window, prefix sums", total: 42, solved: 0, userSolved: 0, easy: 16, medium: 20, hard: 6 },
+    { id: "strings", name: "Strings", desc: "Pattern matching, character counting, anagrams, palindrome logic", total: 36, solved: 0, userSolved: 0, easy: 14, medium: 16, hard: 6 },
+    { id: "linked-lists", name: "Linked Lists", desc: "Singly, doubly, cycle detection, reversing, fast & slow pointers", total: 28, solved: 0, userSolved: 0, easy: 12, medium: 12, hard: 4 },
+    { id: "stacks", name: "Stacks", desc: "LIFO structures, monotonic stacks, parentheses validation, evaluations", total: 24, solved: 0, userSolved: 0, easy: 10, medium: 10, hard: 4 },
+    { id: "queues", name: "Queues", desc: "FIFO buffers, double-ended queues, circular queues, monotonic queues", total: 20, solved: 0, userSolved: 0, easy: 8, medium: 9, hard: 3 },
+    { id: "hashing", name: "Hashing", desc: "Hash maps, hash sets, collision resolution, frequency tables", total: 32, solved: 0, userSolved: 0, easy: 14, medium: 14, hard: 4 },
+    { id: "recursion", name: "Recursion", desc: "Base cases, recurrence relations, call stack, divide & conquer", total: 22, solved: 0, userSolved: 0, easy: 8, medium: 10, hard: 4 },
+    { id: "sorting", name: "Sorting", desc: "Quick sort, merge sort, heap sort, counting sort, comparator logic", total: 18, solved: 0, userSolved: 0, easy: 8, medium: 8, hard: 2 },
+    { id: "searching", name: "Searching", desc: "Binary search on arrays, binary search on answer spaces", total: 26, solved: 0, userSolved: 0, easy: 9, medium: 13, hard: 4 },
+    { id: "trees", name: "Trees", desc: "Binary trees, tree traversals (in/pre/post/level), LCA, path sums", total: 38, solved: 0, userSolved: 0, easy: 12, medium: 18, hard: 8 },
+    { id: "bst", name: "Binary Search Trees", desc: "BST invariants, insertion, deletion, floor, ceil, validation", total: 22, solved: 0, userSolved: 0, easy: 8, medium: 11, hard: 3 },
+    { id: "heaps", name: "Heaps", desc: "Min/max heaps, priority queues, top-K elements, streaming medians", total: 24, solved: 0, userSolved: 0, easy: 6, medium: 13, hard: 5 },
+    { id: "graphs", name: "Graphs", desc: "BFS, DFS, topological sort, Dijkstra, Bellman-Ford, Kruskal/Prim", total: 40, solved: 0, userSolved: 0, easy: 8, medium: 22, hard: 10 },
+    { id: "greedy", name: "Greedy Algorithms", desc: "Locally optimal choices, interval scheduling, Huffman coding", total: 25, solved: 0, userSolved: 0, easy: 8, medium: 12, hard: 5 },
+    { id: "dp", name: "Dynamic Programming", desc: "Optimal substructure, overlapping subproblems, 1D/2D DP, knapsack", total: 48, solved: 0, userSolved: 0, easy: 8, medium: 24, hard: 16 },
+    { id: "backtracking", name: "Backtracking", desc: "State-space tree exploration, pruning, N-Queens, Sudoku solver", total: 20, solved: 0, userSolved: 0, easy: 4, medium: 11, hard: 5 },
+    { id: "tries", name: "Tries", desc: "Prefix trees, auto-complete queries, XOR maximum pairs", total: 16, solved: 0, userSolved: 0, easy: 4, medium: 8, hard: 4 }
   ],
 
   // 24 Original Synthetic DSA Problems (With Javascript, Python, C++, Java support)
@@ -68,7 +69,7 @@ const ARISE_DATA = {
       "Hash Map"
     ],
     "difficulty": "Easy",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "74.2%",
     "verifiedXp": 40,
     "description": "You are monitoring a high-precision telemetry unit receiving an array of integer sensor readings `sensorReadings` and an integer calibration baseline `target`.\n\nYour objective is to identify **two distinct indices** `[i, j]` such that the sum of the readings at these indices equals the calibration target:\n`sensorReadings[i] + sensorReadings[j] == target` (where `i != j`).\n\nYou may assume that each telemetry sequence contains **exactly one valid pair**, and you must not use the same sensor reading index twice. Return the indices in any order.",
@@ -148,24 +149,7 @@ const ARISE_DATA = {
         "expected": "[0, 1]"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-9401",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "Today, 14:20",
-        "runtime": "4 ms",
-        "memory": "11.2 MB"
-      },
-      {
-        "id": "SUB-9382",
-        "status": "Wrong Answer",
-        "language": "C++ 20",
-        "time": "Today, 14:11",
-        "runtime": "5 ms",
-        "memory": "11.1 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "calibrateSensors"
   },
   {
@@ -178,7 +162,7 @@ const ARISE_DATA = {
       "String Parsing"
     ],
     "difficulty": "Easy",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "68.4%",
     "verifiedXp": 40,
     "description": "Telemetry packets in ARISE contain nested framing delimiters represented by a string `frameStr` containing only characters `'('`, `')'`, `'{'`, `'}'`, `'['`, and `']'`.\n\nA packet frame is considered **valid** if and only if:\n1. Open delimiters are closed by the same type of closing delimiter.\n2. Open delimiters are closed in the correct chronological nesting order.\n3. Every closing delimiter matches a preceding opening delimiter of identical category.\n\nReturn `true` if `frameStr` is a valid framing sequence, or `false` otherwise.",
@@ -255,16 +239,7 @@ const ARISE_DATA = {
         "expected": "true"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-8914",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "Yesterday",
-        "runtime": "2 ms",
-        "memory": "9.8 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "isValidPacket"
   },
   {
@@ -278,7 +253,7 @@ const ARISE_DATA = {
       "Greedy"
     ],
     "difficulty": "Easy",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "71.8%",
     "verifiedXp": 45,
     "description": "You are given an array `telemetryMetrics` where `telemetryMetrics[i]` represents the telemetry power level recorded on chronological second `i`.\n\nYou want to maximize your telemetry transmission gain by choosing **one second to initiate transmission** and a **different subsequent second to conclude transmission**.\n\nReturn the **maximum gain** achievable from this transaction. If no positive gain is possible, return `0`.",
@@ -355,16 +330,7 @@ const ARISE_DATA = {
         "expected": "9"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-7810",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "3 days ago",
-        "runtime": "3 ms",
-        "memory": "10.4 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "maxTelemetryGain"
   },
   {
@@ -378,7 +344,7 @@ const ARISE_DATA = {
       "DFS"
     ],
     "difficulty": "Easy",
-    "status": "Attempted",
+    "status": "Unsolved",
     "acceptance": "62.1%",
     "verifiedXp": 50,
     "description": "Given the root node of a binary telemetry validation tree `root`, determine whether the tree is a **symmetric mirror** of itself (i.e. symmetric around its central vertical axis).\n\nEach node contains an integer telemetry checksum `val` and optional `left` and `right` sub-branches.",
@@ -445,16 +411,7 @@ const ARISE_DATA = {
         "expected": "false"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-6102",
-        "status": "Wrong Answer",
-        "language": "C++ 20",
-        "time": "4 days ago",
-        "runtime": "3 ms",
-        "memory": "12.4 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "isSymmetric"
   },
   {
@@ -468,7 +425,7 @@ const ARISE_DATA = {
       "Kadane"
     ],
     "difficulty": "Easy",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "65.3%",
     "verifiedXp": 45,
     "description": "Given an integer array `signalStream` representing power variance measurements, find the contiguous subarray (containing at least one element) which has the **largest sum** and return its sum.",
@@ -545,16 +502,7 @@ const ARISE_DATA = {
         "expected": "23"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-5120",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "5 days ago",
-        "runtime": "4 ms",
-        "memory": "11.0 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "maxSubArray"
   },
   {
@@ -567,7 +515,7 @@ const ARISE_DATA = {
       "Pointers"
     ],
     "difficulty": "Easy",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "76.9%",
     "verifiedXp": 40,
     "description": "Given the head of a singly linked list representing a chained transmission queue `head`, invert the chain in-place and return the reversed list's new head.",
@@ -641,16 +589,7 @@ const ARISE_DATA = {
         "expected": "[2, 1]"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-4210",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "6 days ago",
-        "runtime": "2 ms",
-        "memory": "9.2 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "reverseList"
   },
   {
@@ -664,7 +603,7 @@ const ARISE_DATA = {
       "Arrays"
     ],
     "difficulty": "Easy",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "79.1%",
     "verifiedXp": 35,
     "description": "Given a sorted array of unique integers `sensorLog` and an integer `target`, search for `target` in `sensorLog`. If `target` exists, return its index. Otherwise, return `-1`.\n\nYou must write an algorithm with **O(log N)** runtime complexity.",
@@ -733,16 +672,7 @@ const ARISE_DATA = {
         "expected": "-1"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-3301",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "1 week ago",
-        "runtime": "8 ms",
-        "memory": "13.1 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "search"
   },
   {
@@ -933,7 +863,7 @@ const ARISE_DATA = {
       "Sorting"
     ],
     "difficulty": "Medium",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "53.6%",
     "verifiedXp": 80,
     "description": "Given an integer array `sensorOffsets`, return all distinct triplets `[sensorOffsets[i], sensorOffsets[j], sensorOffsets[k]]` such that `i != j`, `i != k`, and `j != k`, and:\n\n`sensorOffsets[i] + sensorOffsets[j] + sensorOffsets[k] == 0`\n\nNotice that the solution set must not contain duplicate triplets.",
@@ -1010,16 +940,7 @@ const ARISE_DATA = {
         "expected": "[[0, 0, 0]]"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-3012",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "2 days ago",
-        "runtime": "42 ms",
-        "memory": "22.4 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "threeSumEquilibrium"
   },
   {
@@ -1033,7 +954,7 @@ const ARISE_DATA = {
       "Hash Map"
     ],
     "difficulty": "Medium",
-    "status": "Attempted",
+    "status": "Unsolved",
     "acceptance": "49.8%",
     "verifiedXp": 75,
     "description": "Given a string of transmission token symbols `tokenStream`, find the length of the **longest contiguous substring** without repeating characters.",
@@ -1111,16 +1032,7 @@ const ARISE_DATA = {
         "expected": "3"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-2190",
-        "status": "Wrong Answer",
-        "language": "C++ 20",
-        "time": "3 days ago",
-        "runtime": "6 ms",
-        "memory": "10.2 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "lengthOfLongestSubstring"
   },
   {
@@ -1134,7 +1046,7 @@ const ARISE_DATA = {
       "Greedy"
     ],
     "difficulty": "Medium",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "58.2%",
     "verifiedXp": 85,
     "description": "You are given an integer array `markerHeights` of length `n`. There are `n` vertical boundary markers drawn such that the two endpoints of the `i`-th marker are `(i, 0)` and `(i, markerHeights[i])`.\n\nFind two markers that together with the horizontal x-axis form a reservoir, such that the reservoir contains the **maximum volume of water**.\n\nReturn the maximum volume of water a reservoir can store. You may not slant the reservoir.",
@@ -1202,16 +1114,7 @@ const ARISE_DATA = {
         "expected": "1"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-1942",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "4 days ago",
-        "runtime": "4 ms",
-        "memory": "11.8 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "maxReservoirCapacity"
   },
   {
@@ -1225,7 +1128,7 @@ const ARISE_DATA = {
       "Math"
     ],
     "difficulty": "Medium",
-    "status": "Solved",
+    "status": "Unsolved",
     "acceptance": "64.1%",
     "verifiedXp": 75,
     "description": "Given an integer array `nodeLoads`, return an array `distributedAnswer` such that `distributedAnswer[i]` is equal to the **product of all the elements of `nodeLoads` except `nodeLoads[i]`**.\n\nThe product of any prefix or suffix of `nodeLoads` is guaranteed to fit in a 32-bit integer.\n\nYou must write an algorithm that runs in **O(N)** time and **without using the division operator**.",
@@ -1295,16 +1198,7 @@ const ARISE_DATA = {
         "expected": "[0, 0, 9, 0, 0]"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-1402",
-        "status": "Accepted",
-        "language": "C++ 20",
-        "time": "4 days ago",
-        "runtime": "9 ms",
-        "memory": "24.6 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "productExceptSelf"
   },
   {
@@ -1317,7 +1211,7 @@ const ARISE_DATA = {
       "BFS"
     ],
     "difficulty": "Medium",
-    "status": "Attempted",
+    "status": "Unsolved",
     "acceptance": "42.7%",
     "verifiedXp": 90,
     "description": "You are given an integer array `tokenDenominations` representing available credit token values, and an integer `targetQuota` representing a total credit target.\n\nReturn the **fewest number of tokens** needed to fulfill that quota. If that amount of quota cannot be made up by any combination of the tokens, return `-1`.\n\nYou may assume you have an infinite quantity of each token denomination.",
@@ -1396,16 +1290,7 @@ const ARISE_DATA = {
         "expected": "0"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-1209",
-        "status": "Time Limit Exceeded",
-        "language": "Python 3.12",
-        "time": "5 days ago",
-        "runtime": "> 2000 ms",
-        "memory": "18.4 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "coinChange"
   },
   {
@@ -1753,7 +1638,7 @@ const ARISE_DATA = {
       "Dynamic Programming"
     ],
     "difficulty": "Hard",
-    "status": "Attempted",
+    "status": "Unsolved",
     "acceptance": "36.4%",
     "verifiedXp": 140,
     "description": "Given `n` non-negative integers representing an elevation map `elevationProfiles` where the width of each barrier is `1`, compute how much liquid water it can trap after raining.",
@@ -1827,16 +1712,7 @@ const ARISE_DATA = {
         "expected": "9"
       }
     ],
-    "submissions": [
-      {
-        "id": "SUB-0914",
-        "status": "Wrong Answer",
-        "language": "C++ 20",
-        "time": "1 week ago",
-        "runtime": "5 ms",
-        "memory": "12.0 MB"
-      }
-    ],
+    "submissions": [],
     "functionName": "trapRainwater"
   },
   {
@@ -2620,3 +2496,65 @@ const ARISE_DATA = {
     }
   ]
 };
+
+/* ==========================================================================
+   DYNAMIC TOPIC PROGRESS HELPERS
+   ========================================================================== */
+function getTopicSolvedCount(topic) {
+  if (!topic) return 0;
+  if (typeof topic.userSolved === 'number') {
+    return topic.userSolved;
+  }
+  if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.problems)) {
+    const topicNameLower = (topic.name || '').trim().toLowerCase();
+    const topicIdLower = (topic.id || '').trim().toLowerCase();
+    const count = ARISE_DATA.problems.filter(p => {
+      const pTopic = (p.topic || '').trim().toLowerCase();
+      return (pTopic === topicNameLower || pTopic === topicIdLower || (topicIdLower.length > 2 && pTopic.includes(topicIdLower))) && p.status === 'Solved';
+    }).length;
+    return count;
+  }
+  return topic.solved || 0;
+}
+
+function updateTopicOnSolved(problem) {
+  if (!problem || !problem.topic || typeof ARISE_DATA === 'undefined' || !Array.isArray(ARISE_DATA.topics)) return null;
+  const pTopicLower = problem.topic.trim().toLowerCase();
+  const topicObj = ARISE_DATA.topics.find(t => {
+    const tName = (t.name || '').trim().toLowerCase();
+    const tId = (t.id || '').trim().toLowerCase();
+    return tName === pTopicLower || tId === pTopicLower || (tId.length > 2 && pTopicLower.includes(tId)) || (tName.includes(pTopicLower));
+  });
+  if (topicObj) {
+    const current = getTopicSolvedCount(topicObj);
+    topicObj.userSolved = current + 1;
+    topicObj.solved = topicObj.userSolved;
+    return topicObj;
+  }
+  return null;
+}
+
+function resetAllTopicSolves() {
+  if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.topics)) {
+    ARISE_DATA.topics.forEach(t => {
+      t.userSolved = 0;
+      t.solved = 0;
+    });
+  }
+  if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.problems)) {
+    ARISE_DATA.problems.forEach(p => {
+      p.status = 'Unsolved';
+    });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.getTopicSolvedCount = getTopicSolvedCount;
+  window.updateTopicOnSolved = updateTopicOnSolved;
+  window.resetAllTopicSolves = resetAllTopicSolves;
+}
+if (typeof globalThis !== 'undefined') {
+  globalThis.getTopicSolvedCount = getTopicSolvedCount;
+  globalThis.updateTopicOnSolved = updateTopicOnSolved;
+  globalThis.resetAllTopicSolves = resetAllTopicSolves;
+}

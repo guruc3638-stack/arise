@@ -9,12 +9,17 @@ function renderOverviewDashboard() {
   const isCleanAccount = (!user.verifiedXp || user.verifiedXp === 0);
   const currentRankDisplay = (isCleanAccount || !user.rank || !user.rank[currentScope]) ? "Unranked" : `#${user.rank[currentScope]}`;
 
-  // Topic mastery: for clean new accounts, userSolved is strictly 0
+  // Topic mastery: dynamically calculated solves
   const topTopics = [...ARISE_DATA.topics]
-    .map(t => ({
-      ...t,
-      solved: isCleanAccount ? 0 : (t.userSolved !== undefined ? t.userSolved : t.solved)
-    }))
+    .map(t => {
+      const solvedCount = (typeof getTopicSolvedCount === 'function')
+        ? getTopicSolvedCount(t)
+        : (isCleanAccount ? 0 : (t.userSolved !== undefined ? t.userSolved : (t.solved || 0)));
+      return {
+        ...t,
+        solved: solvedCount
+      };
+    })
     .slice(0, 5);
 
   const recentSolves = isCleanAccount ? [] : (user.recentSolves || [
@@ -171,9 +176,9 @@ function renderOverviewDashboard() {
 
           <div class="metric-card">
             <span class="metric-label">Overall Progress</span>
-            <span class="metric-value" style="color: var(--accent-cyan);">${isCleanAccount ? '0%' : '68%'}</span>
+            <span class="metric-value" style="color: var(--accent-cyan);">${isCleanAccount ? '0%' : ((user.solvedStats && user.solvedStats.total > 0) ? `${Math.round((user.solvedStats.total / 441) * 100)}%` : '0%')}</span>
             <div class="progress-bar-track" style="margin-top: 4px;">
-              <div class="progress-bar-fill progress-bar-cyan" style="width: ${isCleanAccount ? 0 : 68}%;"></div>
+              <div class="progress-bar-fill progress-bar-cyan" style="width: ${isCleanAccount ? 0 : ((user.solvedStats && user.solvedStats.total > 0) ? Math.round((user.solvedStats.total / 441) * 100) : 0)}%;"></div>
             </div>
           </div>
 
@@ -224,7 +229,11 @@ function renderOverviewDashboard() {
 
             <div style="padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-muted);">
               <span>Next recommended: <b style="color: #A78BFA;">Dynamic Programming</b></span>
-              <span style="font-family: var(--font-mono);">18/48 solved</span>
+              <span style="font-family: var(--font-mono);">${(function() {
+                const dp = (ARISE_DATA.topics || []).find(t => t.id === 'dp') || { total: 48 };
+                const cnt = (typeof getTopicSolvedCount === 'function') ? getTopicSolvedCount(dp) : (dp.userSolved || dp.solved || 0);
+                return `${cnt}/${dp.total}`;
+              })()} solved</span>
             </div>
           </div>
         </div>

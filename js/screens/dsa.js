@@ -46,7 +46,10 @@ function renderDsaTopicExplorer() {
       <!-- 17 Topics Grid -->
       <div class="dsa-topics-grid">
         ${topics.map(t => {
-          const pct = Math.round((t.solved / t.total) * 100);
+          const solvedCount = (typeof getTopicSolvedCount === 'function')
+            ? getTopicSolvedCount(t)
+            : (t.userSolved !== undefined ? t.userSolved : (t.solved || 0));
+          const pct = t.total > 0 ? Math.round((solvedCount / t.total) * 100) : 0;
           return `
             <div class="dsa-topic-tile" onclick="selectDsaTopic('${t.name}')">
               <div>
@@ -63,7 +66,7 @@ function renderDsaTopicExplorer() {
 
               <div>
                 <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                  <span class="text-muted">Solved: <b style="color: var(--text-primary); font-family: var(--font-mono);">${t.solved}</b> / ${t.total}</span>
+                  <span class="text-muted">Solved: <b style="color: var(--text-primary); font-family: var(--font-mono);">${solvedCount}</b> / ${t.total}</span>
                   <span style="color: var(--text-muted); font-size: 10px;">
                     <span style="color: var(--diff-easy); font-weight: 600;">${t.easy}E</span> / 
                     <span style="color: var(--diff-medium); font-weight: 600;">${t.medium}M</span> / 
@@ -1340,6 +1343,22 @@ function handleJudgeEvaluationResult(result, p, lang) {
     p.status = 'Solved';
 
     if (!alreadySolved) {
+      // Dynamically increment solved count for this topic
+      if (typeof updateTopicOnSolved === 'function') {
+        updateTopicOnSolved(p);
+      } else if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.topics)) {
+        const pTopicLower = (p.topic || '').trim().toLowerCase();
+        const topicObj = ARISE_DATA.topics.find(t => {
+          const tName = (t.name || '').trim().toLowerCase();
+          const tId = (t.id || '').trim().toLowerCase();
+          return tName === pTopicLower || tId === pTopicLower || (tId.length > 2 && pTopicLower.includes(tId)) || (tName.includes(pTopicLower));
+        });
+        if (topicObj) {
+          topicObj.userSolved = (topicObj.userSolved || topicObj.solved || 0) + 1;
+          topicObj.solved = topicObj.userSolved;
+        }
+      }
+
       const award = result.verifiedXp !== undefined ? result.verifiedXp : (p.verifiedXp || 10);
       if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
         if (result.totalVerifiedXp !== undefined) {
@@ -1351,6 +1370,20 @@ function handleJudgeEvaluationResult(result, p, lang) {
         if (p.difficulty === 'Easy') ARISE_DATA.currentUser.solvedStats.easy += 1;
         else if (p.difficulty === 'Medium') ARISE_DATA.currentUser.solvedStats.medium += 1;
         else if (p.difficulty === 'Hard') ARISE_DATA.currentUser.solvedStats.hard += 1;
+
+        if (!Array.isArray(ARISE_DATA.currentUser.recentSolves)) {
+          ARISE_DATA.currentUser.recentSolves = [];
+        }
+        if (!ARISE_DATA.currentUser.recentSolves.some(r => r.id === p.id)) {
+          ARISE_DATA.currentUser.recentSolves.unshift({
+            id: p.id,
+            title: p.title,
+            difficulty: p.difficulty,
+            topic: p.topic,
+            time: 'Just now',
+            xp: award
+          });
+        }
 
         // If user was Unranked, re-sync with profile to update rank display
         if (ARISE_DATA.currentUser.rankDisplay === 'Unranked' && typeof AriseAuth !== 'undefined') {

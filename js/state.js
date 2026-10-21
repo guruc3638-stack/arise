@@ -305,6 +305,18 @@ const AriseState = {
             }
           });
         }
+        if (Array.isArray(ARISE_DATA.topics)) {
+          ARISE_DATA.topics.forEach(t => {
+            const tNameLower = (t.name || '').trim().toLowerCase();
+            const tIdLower = (t.id || '').trim().toLowerCase();
+            const count = (ARISE_DATA.problems || []).filter(p => {
+              const pTopic = (p.topic || '').trim().toLowerCase();
+              return (pTopic === tNameLower || pTopic === tIdLower || (tIdLower.length > 2 && pTopic.includes(tIdLower))) && p.status === 'Solved';
+            }).length;
+            t.userSolved = count;
+            t.solved = count;
+          });
+        }
       }
       this.notify();
       return stats;

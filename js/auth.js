@@ -201,6 +201,7 @@ const AriseAuth = {
         if (Array.isArray(ARISE_DATA.topics)) {
           ARISE_DATA.topics.forEach(t => {
             t.userSolved = 0;
+            t.solved = 0;
           });
         }
         if (Array.isArray(ARISE_DATA.problems)) {
