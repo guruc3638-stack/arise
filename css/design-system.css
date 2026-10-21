@@ -1,0 +1,147 @@
+/* ==========================================================================
+   ARISE DESIGN SYSTEM — FIGMA PAGES 01-12 & DESIGN SYSTEM VIEWER
+   Token Tables, Component Matrix, Developer Handoff, Audit Report
+   ========================================================================== */
+
+.ds-viewer-layout {
+  display: flex;
+  width: 100%;
+  min-height: calc(100vh - 41px);
+  background: var(--bg-base);
+}
+
+.ds-sidebar {
+  width: 280px;
+  background: #090D18;
+  border-right: 1px solid var(--border-default);
+  padding: var(--space-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: calc(100vh - 41px);
+  overflow-y: auto;
+}
+
+.ds-page-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--duration-fast);
+}
+
+.ds-page-link:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+
+.ds-page-link.active {
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #FFFFFF;
+}
+
+.ds-page-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ds-page-link.active .ds-page-num {
+  color: #A78BFA;
+}
+
+.ds-content-area {
+  flex: 1;
+  padding: var(--space-8);
+  max-width: 1180px;
+  margin: 0 auto;
+  overflow-y: auto;
+}
+
+/* Color Swatches Grid */
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.swatch-card {
+  background: var(--surface-glass);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.swatch-preview {
+  height: 80px;
+  width: 100%;
+}
+
+.swatch-meta {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.swatch-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.swatch-val {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* Typography scale sample row */
+.type-sample-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Handoff Token Table */
+.handoff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: var(--space-4);
+}
+
+.handoff-table th, .handoff-table td {
+  padding: 10px 14px;
+  border: 1px solid var(--border-default);
+  text-align: left;
+}
+
+.handoff-table th {
+  background: #111728;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.handoff-table code {
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  color: #C4B5FD;
+}

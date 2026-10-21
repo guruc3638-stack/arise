@@ -1,0 +1,169 @@
+/* ==========================================================================
+   ARISE DESIGN SYSTEM — DESIGN TOKENS
+   "Learn. Solve. Rise."
+   Art-directed Dark Mode Glassmorphism & Developer Minimalism
+   ========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     1. COLOR TOKENS (Exact spec)
+     ------------------------------------------------------------------------ */
+  /* Surfaces & Backgrounds */
+  --bg-base: #080B14;
+  --bg-secondary: #0D1220;
+  --bg-tertiary: #111728;
+  --surface-elevated: #11182A;
+  --surface-panel: #0E1424;
+  --surface-editor: #0B0F1C;
+  --surface-overlay: rgba(8, 11, 20, 0.85);
+
+  /* Glassmorphism Recipe */
+  --surface-glass: rgba(255, 255, 255, 0.05);
+  --surface-glass-hover: rgba(255, 255, 255, 0.08);
+  --surface-glass-active: rgba(255, 255, 255, 0.11);
+  --surface-glass-selected: rgba(139, 92, 246, 0.14);
+  --blur-glass: 20px;
+  --glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+  --glass-highlight-subtle: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+
+  /* Borders */
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --border-focus: #8B5CF6;
+  --border-focus-glow: rgba(139, 92, 246, 0.35);
+
+  /* Accents */
+  --accent-primary: #8B5CF6;   /* Violet */
+  --accent-secondary: #6366F1; /* Indigo */
+  --accent-gradient: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #9D74F8 0%, #7477F5 100%);
+  --accent-gradient-subtle: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+  --accent-cyan: #22D3EE;      /* Cyan - progress, data viz & key highlights only */
+  --accent-cyan-subtle: rgba(34, 211, 238, 0.15);
+
+  /* Typography / Text Colors (WCAG 2.2 AA compliant on dark & glass) */
+  --text-primary: #F5F7FF;
+  --text-secondary: #A4AEC5;
+  --text-muted: #6F7B94;
+  --text-inverse: #080B14;
+
+  /* Feedback Colors (Always paired with icons) */
+  --success: #34D399;
+  --success-bg: rgba(52, 211, 153, 0.12);
+  --success-border: rgba(52, 211, 153, 0.30);
+  
+  --warning: #FBBF24;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --warning-border: rgba(251, 191, 36, 0.30);
+  
+  --error: #FB7185;
+  --error-bg: rgba(251, 113, 133, 0.12);
+  --error-border: rgba(251, 113, 133, 0.30);
+
+  --info: #38BDF8;
+  --info-bg: rgba(56, 189, 248, 0.12);
+  --info-border: rgba(56, 189, 248, 0.30);
+
+  /* Difficulty semantic colors */
+  --diff-easy: #34D399;
+  --diff-easy-bg: rgba(52, 211, 153, 0.12);
+  --diff-medium: #FBBF24;
+  --diff-medium-bg: rgba(251, 191, 36, 0.12);
+  --diff-hard: #FB7185;
+  --diff-hard-bg: rgba(251, 113, 133, 0.12);
+
+  /* ------------------------------------------------------------------------
+     2. TYPOGRAPHY
+     ------------------------------------------------------------------------ */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+
+  /* Scale: Size / Line-height */
+  --text-display: 40px;
+  --leading-display: 48px;
+  --text-h1: 32px;
+  --leading-h1: 40px;
+  --text-h2: 24px;
+  --leading-h2: 32px;
+  --text-h3: 18px;
+  --leading-h3: 28px;
+  --text-body: 14px;
+  --leading-body: 22px;
+  --text-small: 12px;
+  --leading-small: 18px;
+  --text-mono: 13px;
+  --leading-mono: 20px;
+
+  /* Font Weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ------------------------------------------------------------------------
+     3. 4PX SPACING GRID
+     ------------------------------------------------------------------------ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ------------------------------------------------------------------------
+     4. RADIUS
+     ------------------------------------------------------------------------ */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;   /* inputs, dense rows */
+  --radius-lg: 16px;   /* cards, containers */
+  --radius-xl: 20px;   /* hero panels, modals */
+  --radius-full: 9999px; /* pills, avatars, tags */
+
+  /* ------------------------------------------------------------------------
+     5. ELEVATION & SHADOWS (Restrained & Realistic)
+     ------------------------------------------------------------------------ */
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 24px rgba(139, 92, 246, 0.28);
+  --shadow-glow-cyan: 0 0 24px rgba(34, 211, 238, 0.25);
+
+  /* ------------------------------------------------------------------------
+     6. MOTION & TRANSITIONS
+     ------------------------------------------------------------------------ */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 350ms;
+
+  /* ------------------------------------------------------------------------
+     7. Z-INDEX SYSTEM
+     ------------------------------------------------------------------------ */
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-header: 50;
+  --z-sidebar: 60;
+  --z-dropdown: 100;
+  --z-modal-backdrop: 200;
+  --z-modal: 210;
+  --z-toast: 300;
+  --z-command-palette: 400;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
