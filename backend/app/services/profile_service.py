@@ -36,11 +36,7 @@ class ProfileService:
         stats = await submission_repo.get_user_practice_stats(auth_user.user_id)
 
         if existing:
-            # Rule 3: Reconcile with authoritative ledger sum
-            existing["verified_xp"] = total_xp
-            existing["solved_count"] = stats["unique_solved_count"]
-            existing["practice_count"] = stats["total_practice_attempts"]
-            return ProfileResponse(**existing)
+            return await self.get_profile_by_user_id(auth_user.user_id)
 
         # Generate unique immutable UID on the server
         uid = await self.generate_unique_uid()
@@ -68,12 +64,13 @@ class ProfileService:
             "rank_india": None,
         }
         
-        created = await profile_repo.create(profile_data)
-        return ProfileResponse(**created)
+        await profile_repo.create(profile_data)
+        return await self.get_profile_by_user_id(auth_user.user_id)
 
     async def get_profile_by_user_id(self, user_id: str) -> ProfileResponse:
         """Fetch current user's profile."""
         from app.repositories.submission_repository import submission_repo
+        from app.repositories.learning_repository import learning_repo
 
         profile = await profile_repo.get_by_user_id(user_id)
         if not profile:
@@ -82,6 +79,17 @@ class ProfileService:
         stats = await submission_repo.get_user_practice_stats(user_id)
         profile["solved_count"] = stats["unique_solved_count"]
         profile["practice_count"] = stats["total_practice_attempts"]
+
+        # Doc 12 Decision 9: Completed courses and skills appear on profile
+        completions = await learning_repo.list_user_completions(user_id)
+        profile["completed_courses_count"] = len(completions)
+        skills = []
+        for c in completions:
+            course = await learning_repo.get_course_by_id_or_slug(c["course_id"])
+            if course:
+                skills.extend(course.get("skills", []))
+        profile["completed_skills"] = list(dict.fromkeys(skills))
+
         return ProfileResponse(**profile)
 
     async def update_profile(self, user_id: str, updates: ProfileUpdate) -> ProfileResponse:
@@ -92,10 +100,11 @@ class ProfileService:
 
         update_dict = updates.model_dump(exclude_unset=True)
         updated = await profile_repo.update(user_id, update_dict)
-        return ProfileResponse(**updated)
+        return await self.get_profile_by_user_id(user_id)
 
     async def get_public_profile(self, uid: str) -> PublicProfileResponse:
         """Rule 8 & T-16: Returns public profile respecting visibility toggles."""
+        from app.repositories.learning_repository import learning_repo
         profile = await profile_repo.get_by_uid(uid)
         if not profile:
             raise NotFoundError(f"No ARISE hunter found with UID '{uid}'.")
@@ -103,6 +112,13 @@ class ProfileService:
         # Determine visibility
         show_rank = profile.get("show_dsa_rank", True)
         show_progress = profile.get("show_dsa_progress", True)
+
+        completions = await learning_repo.list_user_completions(profile["user_id"])
+        skills = []
+        for c in completions:
+            course = await learning_repo.get_course_by_id_or_slug(c["course_id"])
+            if course:
+                skills.extend(course.get("skills", []))
 
         return PublicProfileResponse(
             uid=profile["uid"],
@@ -117,6 +133,8 @@ class ProfileService:
             solved_count=profile.get("solved_count") if show_progress else None,
             rank_state=profile.get("rank_state") if show_rank else None,
             rank_india=profile.get("rank_india") if show_rank else None,
+            completed_courses_count=len(completions),
+            completed_skills=list(dict.fromkeys(skills)),
         )
 
 
