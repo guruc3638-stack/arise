@@ -284,11 +284,28 @@ const AriseAuth = {
 
       // If Supabase client direct auth didn't return session, use backend auth bridge
       if (!session) {
-        const res = await fetch(`${AriseState.apiBase}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim().toLowerCase(), password })
-        });
+        let res;
+        try {
+          res = await fetch(`${AriseState.apiBase}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim().toLowerCase(), password })
+          });
+        } catch (fetchErr) {
+          const altBase = AriseState.apiBase.includes('localhost')
+            ? AriseState.apiBase.replace('localhost', '127.0.0.1')
+            : AriseState.apiBase.replace('127.0.0.1', 'localhost');
+          try {
+            res = await fetch(`${altBase}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: email.trim().toLowerCase(), password })
+            });
+            AriseState.apiBase = altBase;
+          } catch (err2) {
+            throw new Error("Unable to connect to the ARISE backend server. Please verify the server is running on port 8000.");
+          }
+        }
         const data = await res.json();
         if (!res.ok) {
           // Safe error messaging: never reveal whether an email exists
@@ -361,15 +378,36 @@ const AriseAuth = {
 
       // Fallback or standard path: Backend signup endpoint
       if (!session) {
-        const res = await fetch(`${AriseState.apiBase}/auth/signup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: email.trim().toLowerCase(),
-            password,
-            display_name: displayName || email.split('@')[0]
-          })
-        });
+        let res;
+        try {
+          res = await fetch(`${AriseState.apiBase}/auth/signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email.trim().toLowerCase(),
+              password,
+              display_name: displayName || email.split('@')[0]
+            })
+          });
+        } catch (fetchErr) {
+          const altBase = AriseState.apiBase.includes('localhost')
+            ? AriseState.apiBase.replace('localhost', '127.0.0.1')
+            : AriseState.apiBase.replace('127.0.0.1', 'localhost');
+          try {
+            res = await fetch(`${altBase}/auth/signup`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: email.trim().toLowerCase(),
+                password,
+                display_name: displayName || email.split('@')[0]
+              })
+            });
+            AriseState.apiBase = altBase;
+          } catch (err2) {
+            throw new Error("Unable to connect to the ARISE backend server. Please verify the backend is running on port 8000.");
+          }
+        }
         const data = await res.json();
         if (!res.ok) {
           if (res.status === 409 || (data.code && data.code === "CONFLICT")) {

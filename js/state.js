@@ -189,7 +189,11 @@ const AriseState = {
     this.notify();
   },
 
-  apiBase: 'http://localhost:8000/api/v1',
+  apiBase: (typeof window !== 'undefined' && window.location && window.location.hostname === '127.0.0.1')
+    ? 'http://127.0.0.1:8000/api/v1'
+    : (typeof window !== 'undefined' && window.location && window.location.hostname && window.location.hostname !== 'localhost')
+      ? `http://${window.location.hostname}:8000/api/v1`
+      : 'http://localhost:8000/api/v1',
   authToken: typeof localStorage !== 'undefined' ? (localStorage.getItem('arise_token') || null) : null,
 
   async apiRequest(path, method = 'GET', body = null) {
@@ -198,11 +202,28 @@ const AriseState = {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    const res = await fetch(`${this.apiBase}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : null
-    });
+    let res;
+    try {
+      res = await fetch(`${this.apiBase}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : null
+      });
+    } catch (fetchErr) {
+      const altBase = this.apiBase.includes('localhost')
+        ? this.apiBase.replace('localhost', '127.0.0.1')
+        : this.apiBase.replace('127.0.0.1', 'localhost');
+      try {
+        res = await fetch(`${altBase}${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : null
+        });
+        this.apiBase = altBase;
+      } catch (err2) {
+        throw new Error("Unable to connect to ARISE backend server (port 8000). Please ensure backend is running.");
+      }
+    }
     
     // Rule 3: Handle expired or invalid tokens: API returns 401, frontend signs user out and redirects to /login
     if (res.status === 401) {
