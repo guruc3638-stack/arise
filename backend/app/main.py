@@ -50,7 +50,7 @@ app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
-from app.routers import health, profile, dsa, submissions, leaderboards, friends, learning
+from app.routers import health, profile, dsa, submissions, leaderboards, friends, learning, self_study, badges
 
 # Routers
 # Mount root health check /health and versioned /api/v1/health
@@ -62,6 +62,8 @@ app.include_router(submissions.router, prefix=settings.API_V1_STR)
 app.include_router(leaderboards.router, prefix=settings.API_V1_STR)
 app.include_router(friends.router, prefix=settings.API_V1_STR)
 app.include_router(learning.router, prefix=settings.API_V1_STR)
+app.include_router(self_study.router, prefix=settings.API_V1_STR)
+app.include_router(badges.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/", tags=["Root"])
