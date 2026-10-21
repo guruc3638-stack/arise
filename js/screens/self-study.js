@@ -370,12 +370,21 @@ function openUploadDocumentModal() {
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('upload-doc-modal').classList.remove('open')">✕</button>
       </div>
       <div class="modal-body" style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <!-- Inline Upload Error Box -->
+        <div id="upload-doc-error" style="display: none; padding: 10px 14px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #FCA5A5; font-size: 13px; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="upload-doc-error-text"></span>
+        </div>
+
         <input type="file" id="study-file-input" accept=".pdf,application/pdf" style="display: none;" onchange="handleStudyFileSelected(event)">
 
-        <div style="border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 36px 20px; text-align: center; background: rgba(255,255,255,0.02); cursor: pointer;"
-          onclick="document.getElementById('study-file-input').click()">
+        <div id="upload-dropzone" style="border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 36px 20px; text-align: center; background: rgba(255,255,255,0.02); cursor: pointer; transition: all 0.2s ease;"
+          onclick="document.getElementById('study-file-input').click()"
+          ondragover="event.preventDefault(); this.style.borderColor='var(--accent-primary)'; this.style.background='rgba(139,92,246,0.06)';"
+          ondragleave="this.style.borderColor='var(--border-strong)'; this.style.background='rgba(255,255,255,0.02)';"
+          ondrop="event.preventDefault(); this.style.borderColor='var(--border-strong)'; this.style.background='rgba(255,255,255,0.02)'; if (event.dataTransfer.files && event.dataTransfer.files[0]) { handleStudyFileSelected({ target: { files: event.dataTransfer.files } }); }">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--accent-primary); margin-bottom: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">Select PDF document or click to browse</div>
+          <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">Select PDF document or drop file here</div>
           <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Supported: Valid PDF only (%PDF magic bytes) • Maximum size: 10 MB</div>
         </div>
 
@@ -411,6 +420,9 @@ function handleStudyFileSelected(event) {
   const statusBox = document.getElementById('upload-file-status');
   const nameEl = document.getElementById('upload-file-name');
   const sizeEl = document.getElementById('upload-file-size');
+  const errorBox = document.getElementById('upload-doc-error');
+
+  if (errorBox) errorBox.style.display = 'none';
 
   if (statusBox && nameEl && sizeEl) {
     nameEl.textContent = file.name;
@@ -420,18 +432,34 @@ function handleStudyFileSelected(event) {
 }
 
 async function submitStudyPdfUpload() {
+  const inputEl = document.getElementById('study-file-input');
+  if (!selectedUploadFile && inputEl && inputEl.files && inputEl.files[0]) {
+    selectedUploadFile = inputEl.files[0];
+  }
+
+  const errorBox = document.getElementById('upload-doc-error');
+  const errorText = document.getElementById('upload-doc-error-text');
+
+  function showModalError(msg) {
+    if (errorBox && errorText) {
+      errorText.textContent = msg;
+      errorBox.style.display = 'flex';
+    }
+    if (typeof showToast === 'function') showToast(msg, 'error');
+  }
+
   if (!selectedUploadFile) {
-    if (typeof showToast === 'function') showToast('Please select a PDF document first.', 'warning');
+    showModalError('Please select a PDF document first.');
     return;
   }
 
   // Client-side validations
   if (!selectedUploadFile.name.toLowerCase().endsWith('.pdf') && selectedUploadFile.type !== 'application/pdf') {
-    if (typeof showToast === 'function') showToast('Only valid PDF documents are allowed (T-11).', 'error');
+    showModalError('Only valid PDF documents are allowed (T-11).');
     return;
   }
   if (selectedUploadFile.size > 10 * 1024 * 1024) {
-    if (typeof showToast === 'function') showToast('File size exceeds the conservative 10MB limit (T-11).', 'error');
+    showModalError('File size exceeds the conservative 10MB limit (T-11).');
     return;
   }
 
@@ -444,16 +472,17 @@ async function submitStudyPdfUpload() {
   try {
     if (typeof AriseState.uploadStudyPdf === 'function') {
       await AriseState.uploadStudyPdf(selectedUploadFile);
+      selectedUploadFile = null;
+      if (inputEl) inputEl.value = '';
       const modal = document.getElementById('upload-doc-modal');
       if (modal) modal.classList.remove('open');
       if (typeof showToast === 'function') {
         showToast('Document uploaded successfully to your private library!', 'success');
       }
+      AriseState.notify();
     }
   } catch (err) {
-    if (typeof showToast === 'function') {
-      showToast('Upload rejected: ' + (err.message || 'Error'), 'error');
-    }
+    showModalError('Upload rejected: ' + (err.message || 'Error'));
     if (btn) {
       btn.disabled = false;
       btn.textContent = 'Upload to Library';

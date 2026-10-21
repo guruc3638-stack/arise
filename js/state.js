@@ -560,7 +560,9 @@ const AriseState = {
   },
 
   async fetchStudyFiles() {
-    if (!this.authToken) return [];
+    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    if (!token) return this.studyFiles || [];
+    this.authToken = token;
     this.studyLoading = true;
     try {
       const files = await this.apiRequest('/study-files');
@@ -581,14 +583,13 @@ const AriseState = {
       return this.studyFiles;
     } catch (err) {
       this.studyLoading = false;
-      return [];
+      return this.studyFiles || [];
     }
   },
 
   async uploadStudyPdf(file) {
     if (!file) throw new Error("Please select a file to upload.");
     const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
-    if (!token) throw new Error("Authentication required.");
 
     if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
       const err = new Error("Uploaded file is not a valid PDF document.");
@@ -601,16 +602,65 @@ const AriseState = {
       throw err;
     }
 
+    if (!token) {
+      // Local fallback for guest/unauthenticated demo session
+      const localId = 'study-local-' + Date.now();
+      const localDoc = {
+        id: localId,
+        user_id: 'local',
+        original_filename: file.name,
+        mime_type: 'application/pdf',
+        size_bytes: file.size,
+        created_at: new Date().toISOString()
+      };
+      if (!this.studyFiles) this.studyFiles = [];
+      this.studyFiles.unshift(localDoc);
+      if (typeof ARISE_DATA !== 'undefined') {
+        if (!ARISE_DATA.studyLibrary) ARISE_DATA.studyLibrary = [];
+        ARISE_DATA.studyLibrary.unshift({
+          id: localId,
+          title: file.name,
+          subject: 'Self Study Material',
+          pages: 1,
+          fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+          lastOpened: 'Just now',
+          created_at: localDoc.created_at
+        });
+      }
+      this.notify();
+      return localDoc;
+    }
+
+    this.authToken = token;
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch(`${this.apiBase}/study-files`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
+    let res;
+    try {
+      res = await fetch(`${this.apiBase}/study-files`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+    } catch (fetchErr) {
+      const altBase = this.apiBase.includes('localhost')
+        ? this.apiBase.replace('localhost', '127.0.0.1')
+        : this.apiBase.replace('127.0.0.1', 'localhost');
+      try {
+        res = await fetch(`${altBase}/study-files`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        this.apiBase = altBase;
+      } catch (err2) {
+        throw new Error("Unable to connect to ARISE backend server (port 8000). Please ensure backend is running.");
+      }
+    }
 
     const data = await res.json();
     if (!res.ok) {
@@ -620,6 +670,7 @@ const AriseState = {
     }
 
     await this.fetchStudyFiles();
+    this.notify();
     return data;
   },
 

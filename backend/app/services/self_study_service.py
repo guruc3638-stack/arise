@@ -37,7 +37,8 @@ class SelfStudyService:
             )
 
         # 2. Magic bytes validation (T-11: 400 Bad Request if not genuine PDF)
-        if not content.startswith(b"%PDF"):
+        clean_content = content.lstrip(b"\xef\xbb\xbf \t\r\n")
+        if not clean_content.startswith(b"%PDF"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid file format. Only valid PDF files starting with '%PDF' are accepted."
