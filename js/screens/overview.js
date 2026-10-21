@@ -25,7 +25,19 @@ function renderOverviewDashboard() {
   ]);
 
   const earnedBadges = isCleanAccount ? [] : ARISE_DATA.badges.filter(b => b.status === 'earned').slice(0, 3);
-  const activeScopeLeaderboard = ARISE_DATA.leaderboards[currentScope] || ARISE_DATA.leaderboards.maharashtra;
+  const activeScopeLeaderboard = (AriseState.leaderboardData && AriseState.leaderboardData.scope === currentScope && AriseState.leaderboardData.entries && AriseState.leaderboardData.entries.length > 0)
+    ? AriseState.leaderboardData.entries.map(e => ({
+        rank: e.rank,
+        name: e.display_name,
+        college: e.college_name || "Institution not set",
+        xp: e.verified_xp,
+        mv: e.rank_movement || "—",
+        solved: e.solved_count !== null && e.solved_count !== undefined ? e.solved_count : "—",
+        isCurrentUser: e.is_current_user || (e.uid === user.uid),
+        avatar: (e.display_name || "Student").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
+      }))
+    : (ARISE_DATA.leaderboards[currentScope] || ARISE_DATA.leaderboards.maharashtra);
+
 
   return `
     <div class="overview-dashboard">

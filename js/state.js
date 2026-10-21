@@ -24,6 +24,11 @@ const AriseState = {
   // Leaderboard active tab: 'global' | 'friends'
   leaderboardTab: 'global',
   leaderboardScope: 'maharashtra', // 'college' | 'district' | 'maharashtra' | 'india'
+  leaderboardData: null,
+  friendsLeaderboardData: null,
+  friendRequests: { incoming: [], outgoing: [] },
+  friendsList: [],
+  leaderboardLoading: false,
 
   // DSA active state
   activeProblem: null, // Initialized from data
@@ -262,6 +267,86 @@ const AriseState = {
     } catch (err) {
       // Fallback to static catalogue
     }
+  },
+
+  async fetchLeaderboard(scope = this.leaderboardScope) {
+    this.leaderboardScope = scope;
+    this.leaderboardLoading = true;
+    this.notify();
+    try {
+      const res = await this.apiRequest(`/leaderboards?scope=${scope}&page_size=50`);
+      this.leaderboardData = res;
+      this.leaderboardLoading = false;
+      this.notify();
+      return res;
+    } catch (err) {
+      this.leaderboardLoading = false;
+      this.notify();
+      return null;
+    }
+  },
+
+  async fetchFriendsLeaderboard() {
+    if (!this.authToken) return null;
+    try {
+      const res = await this.apiRequest('/leaderboards/friends?page_size=50');
+      this.friendsLeaderboardData = res;
+      this.notify();
+      return res;
+    } catch (err) {
+      return null;
+    }
+  },
+
+  async fetchFriends() {
+    if (!this.authToken) return [];
+    try {
+      const res = await this.apiRequest('/friends');
+      this.friendsList = Array.isArray(res) ? res : [];
+      this.notify();
+      return this.friendsList;
+    } catch (err) {
+      return [];
+    }
+  },
+
+  async fetchFriendRequests() {
+    if (!this.authToken) return { incoming: [], outgoing: [] };
+    try {
+      const res = await this.apiRequest('/friend-requests');
+      this.friendRequests = res || { incoming: [], outgoing: [] };
+      this.notify();
+      return this.friendRequests;
+    } catch (err) {
+      return { incoming: [], outgoing: [] };
+    }
+  },
+
+  async sendFriendRequest(recipientUid) {
+    const res = await this.apiRequest('/friend-requests', 'POST', { recipient_uid: recipientUid });
+    await this.fetchFriendRequests();
+    return res;
+  },
+
+  async acceptFriendRequest(requestId) {
+    const res = await this.apiRequest(`/friend-requests/${requestId}/accept`, 'POST');
+    await this.fetchFriendRequests();
+    await this.fetchFriends();
+    await this.fetchFriendsLeaderboard();
+    return res;
+  },
+
+  async declineFriendRequest(requestId) {
+    const res = await this.apiRequest(`/friend-requests/${requestId}/decline`, 'POST');
+    await this.fetchFriendRequests();
+    return res;
+  },
+
+  async removeFriend(uid) {
+    const res = await this.apiRequest(`/friends/${uid}`, 'DELETE');
+    await this.fetchFriends();
+    await this.fetchFriendsLeaderboard();
+    return res;
   }
 };
 
