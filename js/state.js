@@ -253,6 +253,21 @@ const AriseState = {
     }
   },
 
+  async updateProfile(updates) {
+    if (!this.authToken) return null;
+    try {
+      const updated = await this.apiRequest('/me', 'PATCH', updates);
+      if (typeof AriseAuth !== 'undefined' && typeof AriseAuth.applyCleanUserProfile === 'function') {
+        AriseAuth.applyCleanUserProfile(updated);
+      }
+      this.notify();
+      return updated;
+    } catch (err) {
+      console.warn('Failed to update profile:', err.message);
+      throw err;
+    }
+  },
+
   async syncPracticeStats() {
     if (!this.authToken) return null;
     try {

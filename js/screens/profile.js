@@ -35,7 +35,9 @@ function renderProfileView() {
     ? AriseState.badgesList
     : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.badges) ? ARISE_DATA.badges : []);
 
-  const earnedBadges = allBadges.filter(b => b.is_unlocked || b.status === 'earned');
+  const earnedBadges = isCleanAccount
+    ? ((AriseState.badgesList && AriseState.badgesList.length > 0) ? AriseState.badgesList.filter(b => b.is_unlocked) : [])
+    : allBadges.filter(b => b.is_unlocked || b.status === 'earned');
 
   return `
     <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -316,8 +318,39 @@ function renderSettingsScreen() {
         <div>
           <h1 style="font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">Account & Privacy Settings</h1>
           <p class="text-small text-muted" style="margin-top: 4px;">
-            Configure platform preferences and leaderboard presence.
+            Configure platform preferences, academic credentials, and leaderboard presence.
           </p>
+        </div>
+      </div>
+
+      <!-- Account Identity & Profile Card -->
+      <div class="surface-opaque" style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Student Identity</h3>
+            <p class="text-small text-muted" style="margin-top: 2px;">
+              Your academic profile credentials and immutable platform identifier.
+            </p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="openEditProfileModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            Edit Profile
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); margin-top: 4px;">
+          <div style="padding: 12px 14px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Unique ARISE ID (UID)</div>
+            <div style="font-family: var(--font-mono); font-weight: 700; color: #A78BFA; font-size: 14px; margin-top: 4px;">${user.uid}</div>
+          </div>
+          <div style="padding: 12px 14px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Display Name</div>
+            <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-top: 4px;">${user.displayName}</div>
+          </div>
+          <div style="padding: 12px 14px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">College / Institute</div>
+            <div style="font-weight: 500; color: var(--text-primary); font-size: 14px; margin-top: 4px;">${user.college}</div>
+          </div>
         </div>
       </div>
 
@@ -337,7 +370,7 @@ function renderSettingsScreen() {
             { id: 'private', title: 'Private', desc: 'Hidden from all leaderboards. No other student can see your problem solves or topic progress.' }
           ].map(opt => `
             <div style="padding: 14px 18px; border-radius: var(--radius-md); background: ${user.privacySetting === opt.id ? 'rgba(139,92,246,0.12)' : 'rgba(255,255,255,0.02)'}; border: 1px solid ${user.privacySetting === opt.id ? 'rgba(139,92,246,0.4)' : 'var(--border-subtle)'}; cursor: pointer;"
-              onclick="ARISE_DATA.currentUser.privacySetting = '${opt.id}'; AriseState.notify(); showToast('Privacy updated to ' + '${opt.title}', 'success');">
+              onclick="setPrivacySetting('${opt.id}')">
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <span style="font-weight: 600; font-size: 14px; color: ${user.privacySetting === opt.id ? '#FFFFFF' : 'var(--text-primary)'};">${opt.title}</span>
                 ${user.privacySetting === opt.id ? '<span style="color: var(--accent-primary); font-weight: 700;">✓ Active</span>' : ''}
@@ -404,14 +437,62 @@ function openEditProfileModal() {
   modal.classList.add('open');
 }
 
-function saveProfileChanges() {
+async function setPrivacySetting(privacyId) {
+  let showRank = true;
+  let showProgress = true;
+  if (privacyId === 'friends') {
+    showRank = true;
+    showProgress = false;
+  } else if (privacyId === 'private') {
+    showRank = false;
+    showProgress = false;
+  }
+  if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
+    ARISE_DATA.currentUser.privacySetting = privacyId;
+  }
+  try {
+    if (typeof AriseState.updateProfile === 'function') {
+      await AriseState.updateProfile({
+        show_dsa_rank: showRank,
+        show_dsa_progress: showProgress
+      });
+    }
+    if (typeof showToast === 'function') {
+      showToast('Privacy preferences updated and enforced on server.', 'success');
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') {
+      showToast('Failed to update privacy: ' + err.message, 'error');
+    }
+  }
+}
+
+async function saveProfileChanges() {
   const nameInput = document.getElementById('edit-display-name-input');
   const collegeInput = document.getElementById('edit-college-input');
-  if (nameInput?.value) ARISE_DATA.currentUser.displayName = nameInput.value;
-  if (collegeInput?.value) ARISE_DATA.currentUser.college = collegeInput.value;
+  const newName = nameInput?.value?.trim() || (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser ? ARISE_DATA.currentUser.displayName : 'Student');
+  const newCollege = collegeInput?.value?.trim() || (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser ? ARISE_DATA.currentUser.college : 'Institution');
 
-  const modal = document.getElementById('edit-profile-modal');
-  if (modal) modal.classList.remove('open');
-  showToast('Profile updated successfully!', 'success');
-  AriseState.notify();
+  try {
+    if (typeof AriseState.updateProfile === 'function') {
+      await AriseState.updateProfile({
+        display_name: newName,
+        college_name: newCollege
+      });
+    } else if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
+      ARISE_DATA.currentUser.displayName = newName;
+      ARISE_DATA.currentUser.college = newCollege;
+      AriseState.notify();
+    }
+
+    const modal = document.getElementById('edit-profile-modal');
+    if (modal) modal.classList.remove('open');
+    if (typeof showToast === 'function') {
+      showToast('Profile updated successfully on server!', 'success');
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') {
+      showToast('Failed to save changes: ' + err.message, 'error');
+    }
+  }
 }

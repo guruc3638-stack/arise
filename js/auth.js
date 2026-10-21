@@ -164,6 +164,14 @@ const AriseAuth = {
       ARISE_DATA.currentUser.state = profile.state_code || "Maharashtra";
       ARISE_DATA.currentUser.avatar = initials;
 
+      if (profile.show_dsa_rank === false && profile.show_dsa_progress === false) {
+        ARISE_DATA.currentUser.privacySetting = 'private';
+      } else if (profile.show_dsa_rank === true && profile.show_dsa_progress === false) {
+        ARISE_DATA.currentUser.privacySetting = 'friends';
+      } else if (profile.show_dsa_rank === true && profile.show_dsa_progress === true) {
+        ARISE_DATA.currentUser.privacySetting = 'public';
+      }
+
       // Authoritative on-demand stats from xp_ledger (Rule 4)
       const verifiedXp = Number(profile.verified_xp || 0);
       ARISE_DATA.currentUser.verifiedXp = verifiedXp;

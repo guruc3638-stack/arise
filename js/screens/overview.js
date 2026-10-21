@@ -27,7 +27,9 @@ function renderOverviewDashboard() {
   const allBadges = (AriseState.badgesList && AriseState.badgesList.length > 0)
     ? AriseState.badgesList
     : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.badges) ? ARISE_DATA.badges : []);
-  const earnedBadges = allBadges.filter(b => b.is_unlocked || b.status === 'earned').slice(0, 3);
+  const earnedBadges = isCleanAccount
+    ? ((AriseState.badgesList && AriseState.badgesList.length > 0) ? AriseState.badgesList.filter(b => b.is_unlocked).slice(0, 3) : [])
+    : allBadges.filter(b => b.is_unlocked || b.status === 'earned').slice(0, 3);
   const activeScopeLeaderboard = (AriseState.leaderboardData && AriseState.leaderboardData.scope === currentScope && AriseState.leaderboardData.entries && AriseState.leaderboardData.entries.length > 0)
     ? AriseState.leaderboardData.entries.map(e => ({
         rank: e.rank,
