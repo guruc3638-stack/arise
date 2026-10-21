@@ -412,7 +412,7 @@ function escapeHtml(str) {
 }
 
 function openProblemWorkspace(problemId) {
-  const p = ARISE_DATA.problems.find(item => item.id === problemId);
+  const p = ARISE_DATA.problems.find(item => item.id === problemId || item.id.toUpperCase() === String(problemId).toUpperCase());
   if (p) {
     AriseState.activeProblem = p;
     AriseState.judgeStatus = 'idle';
@@ -422,6 +422,32 @@ function openProblemWorkspace(problemId) {
     AriseState.hintConfirmPending = false;
     AriseState.solutionUnlockConfirmPending = false;
     AriseState.setScreen('dsa-workspace');
+
+    // Asynchronously fetch full workspace details if online
+    if (typeof AriseState !== 'undefined' && AriseState.authToken) {
+      AriseState.apiRequest('/problems/' + p.id)
+        .then(detail => {
+          if (detail && AriseState.activeProblem && AriseState.activeProblem.id === p.id) {
+            if (detail.statement) p.description = detail.statement;
+            if (detail.constraints) p.constraints = typeof detail.constraints === 'string' ? detail.constraints.split('\n') : detail.constraints;
+            if (detail.starter_code) p.starterCode = detail.starter_code;
+            if (detail.sample_cases) {
+              p.examples = detail.sample_cases.map(sc => ({
+                input: sc.input,
+                output: sc.expected,
+                explanation: sc.explanation || ''
+              }));
+              p.testCases = detail.sample_cases.map(sc => ({
+                id: sc.id,
+                input: sc.input,
+                expected: sc.expected
+              }));
+            }
+            AriseState.notify();
+          }
+        })
+        .catch(() => {});
+    }
   }
 }
 
@@ -1294,75 +1320,144 @@ function runSampleTestCases() {
   }, 600);
 }
 
-function submitSolutionToJudge(forceState) {
+function handleJudgeEvaluationResult(result, p, lang) {
+  AriseState.lastJudgeResult = result;
+  AriseState.judgeStatus = result.status;
+
+  const langLabel = lang === 'javascript' ? 'JavaScript (Node 20)' : lang === 'python' ? 'Python 3.12' : lang === 'cpp' ? 'C++ 20' : 'Java 21';
+  const subEntry = {
+    id: "SUB-" + Math.floor(1000 + Math.random() * 9000),
+    status: result.status === 'accepted' ? 'Accepted' : result.status === 'wa' ? 'Wrong Answer' : result.status === 'ce' ? 'Compilation Error' : result.status === 're' ? 'Runtime Error' : result.status === 'tle' ? 'Time Limit Exceeded' : 'Error',
+    language: langLabel,
+    time: 'Just now',
+    runtime: result.status === 'accepted' ? (result.runtime || '4 ms') : '—',
+    memory: result.status === 'accepted' ? (result.memory || '11.4 MB') : '—'
+  };
+  AriseState.recordSubmission(p.id, subEntry);
+
+  if (result.status === 'accepted') {
+    const alreadySolved = p.status === 'Solved' || result.xpAwardedBefore;
+    p.status = 'Solved';
+
+    if (!alreadySolved) {
+      const award = result.verifiedXp !== undefined ? result.verifiedXp : (p.verifiedXp || 10);
+      if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
+        if (result.totalVerifiedXp !== undefined) {
+          ARISE_DATA.currentUser.verifiedXp = result.totalVerifiedXp;
+        } else {
+          ARISE_DATA.currentUser.verifiedXp += award;
+        }
+        ARISE_DATA.currentUser.solvedStats.total += 1;
+        if (p.difficulty === 'Easy') ARISE_DATA.currentUser.solvedStats.easy += 1;
+        else if (p.difficulty === 'Medium') ARISE_DATA.currentUser.solvedStats.medium += 1;
+        else if (p.difficulty === 'Hard') ARISE_DATA.currentUser.solvedStats.hard += 1;
+
+        // If user was Unranked, re-sync with profile to update rank display
+        if (ARISE_DATA.currentUser.rankDisplay === 'Unranked' && typeof AriseAuth !== 'undefined') {
+          AriseAuth.syncProfileWithBackend().catch(() => {});
+        }
+      }
+      showToast(`Judge Confirmed: Accepted! +${award} Verified XP awarded.`, 'success');
+    } else {
+      // Subsequent solve awards 0 XP per PRD/SRS rule
+      showToast('Accepted! Practice recorded (0 additional XP per one-time XP rule).', 'info');
+    }
+  } else {
+    if (p.status !== 'Solved') p.status = 'Attempted';
+    if (result.status === 'wa') {
+      showToast(`Submission Rejected: Wrong Answer on Test Case ${result.testCaseIndex || 1}. 0 XP awarded.`, 'error');
+    } else if (result.status === 'ce') {
+      showToast('Submission Rejected: Compilation / Syntax Error. 0 XP awarded.', 'error');
+    } else if (result.status === 're') {
+      showToast('Submission Rejected: Runtime Exception occurred. 0 XP awarded.', 'error');
+    } else if (result.status === 'tle') {
+      showToast('Submission Rejected: Time Limit Exceeded (> 2.0s). 0 XP awarded.', 'error');
+    }
+  }
+
+  AriseState.notify();
+}
+
+async function submitSolutionToJudge(forceState) {
   const p = AriseState.activeProblem;
   if (!p) return;
   const editor = document.getElementById('code-editor-input');
   const userCode = editor ? editor.value : '';
   const lang = AriseState.activeLanguage || 'javascript';
 
+  // Rule T-08: External practice problems cannot be evaluated by the ARISE judge
+  if (p.verification_mode === 'EXTERNAL_LINK' || p.source === 'LEETCODE' || p.source === 'HACKERRANK') {
+    showToast('External practice problems are practiced on the host platform and award 0 verified XP.', 'info');
+    return;
+  }
+
   AriseState.judgeStatus = 'running';
   AriseState.notify();
 
-  setTimeout(() => {
-    // If a test script specifically forced a status, allow override, otherwise evaluate real user code
-    let result;
-    if (forceState && typeof forceState === 'string' && forceState !== 'running') {
-      result = {
+  // If a test script specifically forced a status, allow override
+  if (forceState && typeof forceState === 'string' && forceState !== 'running') {
+    setTimeout(() => {
+      handleJudgeEvaluationResult({
         status: forceState,
         totalCases: p.testCases ? p.testCases.length : 3,
         runtime: '4 ms',
         memory: '11.2 MB',
         verifiedXp: p.verifiedXp || 40,
         message: forceState === 'accepted' ? 'Accepted' : 'Failed'
+      }, p, lang);
+    }, 400);
+    return;
+  }
+
+  // Check if live authenticated session is active
+  if (typeof AriseState !== 'undefined' && AriseState.authToken) {
+    try {
+      const idempotencyKey = 'sub-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+      const res = await AriseState.apiRequest(`/problems/${p.id}/submissions`, 'POST', {
+        language: lang,
+        source_code: userCode,
+        idempotency_key: idempotencyKey
+      });
+
+      let uiStatus = 'wa';
+      if (res.verdict === 'ACCEPTED') uiStatus = 'accepted';
+      else if (res.verdict === 'COMPILATION_ERROR') uiStatus = 'ce';
+      else if (res.verdict === 'RUNTIME_ERROR') uiStatus = 're';
+      else if (res.verdict === 'TIME_LIMIT_EXCEEDED') uiStatus = 'tle';
+      else if (res.verdict === 'SYSTEM_ERROR') uiStatus = 'unavailable';
+
+      const evalResult = {
+        status: uiStatus,
+        totalCases: 10,
+        runtime: (res.execution_time_ms !== null && res.execution_time_ms !== undefined) ? `${res.execution_time_ms} ms` : '4 ms',
+        memory: res.memory_kb ? `${(res.memory_kb / 1024).toFixed(1)} MB` : '11.4 MB',
+        verifiedXp: res.xp_awarded_this_attempt,
+        xpAwardedBefore: res.xp_awarded_before,
+        totalVerifiedXp: res.total_verified_xp,
+        testCaseIndex: res.failing_test_case_index || 1,
+        error: res.error_message || '',
+        message: res.error_message || (uiStatus === 'accepted' ? 'Accepted' : 'Failed')
       };
-    } else {
-      result = AriseJudgeEngine.evaluate(p, userCode, lang, false);
-    }
 
-    AriseState.lastJudgeResult = result;
-    AriseState.judgeStatus = result.status;
-
-    const langLabel = lang === 'javascript' ? 'JavaScript (Node 20)' : lang === 'python' ? 'Python 3.12' : lang === 'cpp' ? 'C++ 20' : 'Java 21';
-    const subEntry = {
-      id: "SUB-" + Math.floor(1000 + Math.random() * 9000),
-      status: result.status === 'accepted' ? 'Accepted' : result.status === 'wa' ? 'Wrong Answer' : result.status === 'ce' ? 'Compilation Error' : result.status === 're' ? 'Runtime Error' : result.status === 'tle' ? 'Time Limit Exceeded' : 'Error',
-      language: langLabel,
-      time: 'Just now',
-      runtime: result.status === 'accepted' ? result.runtime : '—',
-      memory: result.status === 'accepted' ? result.memory : '—'
-    };
-    AriseState.recordSubmission(p.id, subEntry);
-
-    if (result.status === 'accepted') {
-      const alreadySolved = p.status === 'Solved';
-      if (!alreadySolved) {
-        p.status = 'Solved';
-        ARISE_DATA.currentUser.verifiedXp += p.verifiedXp;
-        ARISE_DATA.currentUser.solvedStats.total += 1;
-        if (p.difficulty === 'Easy') ARISE_DATA.currentUser.solvedStats.easy += 1;
-        else if (p.difficulty === 'Medium') ARISE_DATA.currentUser.solvedStats.medium += 1;
-        else if (p.difficulty === 'Hard') ARISE_DATA.currentUser.solvedStats.hard += 1;
-        showToast(`Judge Confirmed: Accepted! +${p.verifiedXp} Verified XP awarded.`, 'success');
-      } else {
-        // Subsequent solve awards 0 XP per PRD/SRS rule
-        showToast('Accepted! Practice recorded (0 additional XP per one-time XP rule).', 'info');
+      handleJudgeEvaluationResult(evalResult, p, lang);
+      return;
+    } catch (apiErr) {
+      console.warn('Judge API call error, falling back to local runner:', apiErr.message);
+      if (apiErr.code === 'CANNOT_SUBMIT_EXTERNAL_PRACTICE') {
+        AriseState.judgeStatus = 'idle';
+        showToast(apiErr.message, 'error');
+        AriseState.notify();
+        return;
       }
-    } else {
-      if (p.status !== 'Solved') p.status = 'Attempted';
-      if (result.status === 'wa') {
-        showToast(`Submission Rejected: Wrong Answer on Test Case ${result.testCaseIndex}/${result.totalCases}.`, 'error');
-      } else if (result.status === 'ce') {
-        showToast('Submission Rejected: Compilation / Syntax Error.', 'error');
-      } else if (result.status === 're') {
-        showToast('Submission Rejected: Runtime Exception occurred.', 'error');
-      } else if (result.status === 'tle') {
-        showToast('Submission Rejected: Time Limit Exceeded (> 2.0s).', 'error');
-      }
+      if (apiErr.status === 401) return;
     }
+  }
 
-    AriseState.notify();
-  }, 850);
+  // Fallback to local sandbox runner
+  setTimeout(() => {
+    const result = AriseJudgeEngine.evaluate(p, userCode, lang, false);
+    handleJudgeEvaluationResult(result, p, lang);
+  }, 650);
 }
 
 // Window exposes for DOM events

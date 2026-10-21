@@ -195,6 +195,13 @@ const AriseAuth = {
             t.userSolved = 0;
           });
         }
+        if (Array.isArray(ARISE_DATA.problems)) {
+          ARISE_DATA.problems.forEach(p => {
+            p.status = 'Unsolved';
+          });
+        }
+      } else if (typeof AriseState !== 'undefined' && typeof AriseState.syncPracticeStats === 'function') {
+        AriseState.syncPracticeStats().catch(() => {});
       }
     }
   },

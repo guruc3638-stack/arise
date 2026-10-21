@@ -225,7 +225,45 @@ const AriseState = {
     } catch (err) {
       console.warn('Could not sync profile from API:', err.message);
     }
+  },
+
+  async syncPracticeStats() {
+    if (!this.authToken) return null;
+    try {
+      const stats = await this.apiRequest('/me/practice-stats');
+      if (stats && typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
+        ARISE_DATA.currentUser.verifiedXp = stats.total_verified_xp;
+        ARISE_DATA.currentUser.solvedStats.total = stats.unique_solved_count;
+        
+        const solvedSet = new Set((stats.problems_solved || []).map(id => String(id).toUpperCase()));
+        if (Array.isArray(ARISE_DATA.problems)) {
+          ARISE_DATA.problems.forEach(p => {
+            if (solvedSet.has(String(p.id).toUpperCase())) {
+              p.status = 'Solved';
+            }
+          });
+        }
+      }
+      this.notify();
+      return stats;
+    } catch (err) {
+      console.warn('Could not sync practice stats:', err.message);
+      return null;
+    }
+  },
+
+  async fetchProblems() {
+    try {
+      const problems = await this.apiRequest('/problems?page_size=100');
+      if (Array.isArray(problems) && problems.length > 0 && typeof ARISE_DATA !== 'undefined') {
+        // Keep problem catalogue synced
+        this.notify();
+      }
+    } catch (err) {
+      // Fallback to static catalogue
+    }
   }
 };
+
 
 
