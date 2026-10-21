@@ -8,7 +8,7 @@
 
 function renderLearningScreen() {
   // Ensure courses list is loaded from live API
-  if ((!AriseState.coursesList || AriseState.coursesList.length === 0) && !AriseState.learningLoading) {
+  if (!AriseState.coursesLoaded && !AriseState.learningLoading) {
     if (typeof AriseState.fetchCourses === 'function') {
       AriseState.fetchCourses().catch(() => {});
     }

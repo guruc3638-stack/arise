@@ -19,7 +19,7 @@ function renderProfileView() {
   const currentRankDisplay = (isCleanAccount || !user.rank || !user.rank.maharashtra) ? "Unranked" : `#${user.rank.maharashtra}`;
 
   // Fetch badges if not loaded
-  if (AriseState.authToken && (!AriseState.badgesList || AriseState.badgesList.length === 0) && !AriseState.badgesLoading) {
+  if (AriseState.authToken && !AriseState.badgesLoaded && !AriseState.badgesLoading) {
     if (typeof AriseState.fetchBadges === 'function') AriseState.fetchBadges().catch(() => {});
   }
 
@@ -198,7 +198,7 @@ function renderProfileView() {
 
 // SCREEN U: ACHIEVEMENT BADGES COLLECTION
 function renderBadgesScreen() {
-  if (AriseState.authToken && (!AriseState.badgesList || AriseState.badgesList.length === 0) && !AriseState.badgesLoading) {
+  if (AriseState.authToken && !AriseState.badgesLoaded && !AriseState.badgesLoading) {
     if (typeof AriseState.fetchBadges === 'function') AriseState.fetchBadges().catch(() => {});
   }
 

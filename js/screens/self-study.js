@@ -7,13 +7,13 @@
    ========================================================================== */
 
 function renderSelfStudyScreen() {
-  if (AriseState.authToken && (!AriseState.studyFiles || AriseState.studyFiles.length === 0) && !AriseState.studyLoading) {
+  if (AriseState.authToken && !AriseState.studyFilesLoaded && !AriseState.studyLoading) {
     if (typeof AriseState.fetchStudyFiles === 'function') {
       AriseState.fetchStudyFiles().catch(() => {});
     }
   }
 
-  if (AriseState.authToken && !AriseState.studySummary?.last_fetched) {
+  if (AriseState.authToken && !AriseState.studySummaryLoaded && !AriseState.studySummaryLoading) {
     if (typeof AriseState.fetchStudySummary === 'function') {
       AriseState.fetchStudySummary().catch(() => {});
     }
@@ -211,7 +211,7 @@ function renderPdfReaderScreen() {
           <!-- Study Timer Floating Control -->
           <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-default); padding: 4px 10px; border-radius: var(--radius-full);">
             <div style="width: 8px; height: 8px; border-radius: 50%; background: ${AriseState.timerRunning ? 'var(--success)' : 'var(--warning)'}; box-shadow: 0 0 6px ${AriseState.timerRunning ? 'var(--success)' : 'var(--warning)'};"></div>
-            <span class="font-mono tabular-nums" style="font-weight: 700; font-size: 13px; color: #FFFFFF;">${timeFormatted}</span>
+            <span id="study-timer-display" class="font-mono tabular-nums" style="font-weight: 700; font-size: 13px; color: #FFFFFF;">${timeFormatted}</span>
             <button class="btn-copy" onclick="toggleStudyTimer()" title="${AriseState.timerRunning ? 'Pause Timer' : 'Resume Timer'}">
               ${AriseState.timerRunning 
                 ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
@@ -278,7 +278,14 @@ function toggleStudyTimer() {
       AriseState.timerInterval = setInterval(() => {
         if (AriseState.timerRunning) {
           AriseState.timerSeconds++;
-          if (AriseState.currentScreen === 'pdf-reader') AriseState.notify();
+          const timerEl = typeof document !== 'undefined' ? document.getElementById('study-timer-display') : null;
+          if (timerEl) {
+            const minutes = Math.floor(AriseState.timerSeconds / 60);
+            const seconds = AriseState.timerSeconds % 60;
+            timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+          } else if (AriseState.currentScreen === 'pdf-reader') {
+            AriseState.notify();
+          }
         }
       }, 1000);
     }

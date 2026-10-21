@@ -50,8 +50,11 @@ const AriseState = {
 
   // Self Study state
   studyFiles: [],
+  studyFilesLoaded: false,
   studyLoading: false,
   studySummary: { total_seconds: 0, total_minutes: 0, total_hours: 0.0, session_count: 0, last_session_at: null },
+  studySummaryLoaded: false,
+  studySummaryLoading: false,
   activeStudySessionId: null,
   activeDoc: (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.studyLibrary) ? ARISE_DATA.studyLibrary[0] : null,
   timerRunning: false,
@@ -60,11 +63,14 @@ const AriseState = {
 
   // Badges state
   badgesList: [],
+  badgesLoaded: false,
   badgesTotalUnlocked: 0,
   badgesLoading: false,
 
   // Learning state
   coursesList: [],
+  coursesLoaded: false,
+  courseDetailLoaded: {},
   activeCourseId: 'course-algo-201',
   activeCourseDetail: null,
   activeLessonId: null,
@@ -419,6 +425,7 @@ const AriseState = {
   },
 
   async fetchCourses() {
+    if (this.learningLoading) return this.coursesList;
     this.learningLoading = true;
     try {
       const courses = await this.apiRequest('/courses');
@@ -447,13 +454,15 @@ const AriseState = {
           }));
         }
       }
+      this.coursesLoaded = true;
       this.learningLoading = false;
       this.notify();
       return courses;
     } catch (err) {
       console.warn('Failed to fetch courses:', err.message);
+      this.coursesLoaded = true;
       this.learningLoading = false;
-      return null;
+      return this.coursesList || [];
     }
   },
 
@@ -573,7 +582,11 @@ const AriseState = {
 
   async fetchStudyFiles() {
     const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
-    if (!token) return this.studyFiles || [];
+    if (!token) {
+      this.studyFilesLoaded = true;
+      return this.studyFiles || [];
+    }
+    if (this.studyLoading) return this.studyFiles || [];
     this.authToken = token;
     this.studyLoading = true;
     try {
@@ -590,10 +603,12 @@ const AriseState = {
           created_at: f.created_at
         }));
       }
+      this.studyFilesLoaded = true;
       this.studyLoading = false;
       this.notify();
       return this.studyFiles;
     } catch (err) {
+      this.studyFilesLoaded = true;
       this.studyLoading = false;
       return this.studyFiles || [];
     }
@@ -702,7 +717,14 @@ const AriseState = {
         this.timerInterval = setInterval(() => {
           if (this.timerRunning) {
             this.timerSeconds++;
-            if (this.currentScreen === 'pdf-reader') this.notify();
+            const timerEl = typeof document !== 'undefined' ? document.getElementById('study-timer-display') : null;
+            if (timerEl) {
+              const minutes = Math.floor(this.timerSeconds / 60);
+              const seconds = this.timerSeconds % 60;
+              timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            } else if (this.currentScreen === 'pdf-reader') {
+              this.notify();
+            }
           }
         }, 1000);
       }
@@ -735,19 +757,36 @@ const AriseState = {
   },
 
   async fetchStudySummary() {
-    if (!this.authToken) return null;
+    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    if (!token) {
+      this.studySummaryLoaded = true;
+      return null;
+    }
+    if (this.studySummaryLoading) return this.studySummary;
+    this.studySummaryLoading = true;
     try {
       const summary = await this.apiRequest('/study-sessions/summary');
-      this.studySummary = summary;
+      if (summary) {
+        this.studySummary = summary;
+      }
+      this.studySummaryLoaded = true;
+      this.studySummaryLoading = false;
       this.notify();
       return summary;
     } catch (err) {
+      this.studySummaryLoaded = true;
+      this.studySummaryLoading = false;
       return null;
     }
   },
 
   async fetchBadges() {
-    if (!this.authToken) return null;
+    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    if (!token) {
+      this.badgesLoaded = true;
+      return null;
+    }
+    if (this.badgesLoading) return this.badgesList;
     this.badgesLoading = true;
     try {
       const res = await this.apiRequest('/me/badges');
@@ -768,10 +807,12 @@ const AriseState = {
           }));
         }
       }
+      this.badgesLoaded = true;
       this.badgesLoading = false;
       this.notify();
       return res;
     } catch (err) {
+      this.badgesLoaded = true;
       this.badgesLoading = false;
       return null;
     }
