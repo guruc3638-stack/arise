@@ -55,10 +55,22 @@ const AriseState = {
   timerInterval: null,
 
   // Learning state
-  activeCourse: ARISE_DATA.courses[1], // Graph Theory
+  coursesList: [],
+  activeCourseId: 'course-algo-201',
+  activeCourseDetail: null,
+  activeLessonId: null,
+  activeLessonDetail: null,
+  completedLessonIds: new Set(),
+  courseCompletions: [],
+  activeCourse: (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.courses) ? ARISE_DATA.courses[1] : null,
   quizAnswers: {},
   quizSubmitted: false,
+  quizSubmitting: false,
   quizScore: 0,
+  quizPassed: false,
+  quizBreakdown: null,
+  lastAttempt: null,
+  learningLoading: false,
 
   // Friends comparison active selections (up to 4 friends)
   compareFriends: ["ARISE-4P9W2T", "ARISE-8M3X1L"],
@@ -347,6 +359,159 @@ const AriseState = {
     await this.fetchFriends();
     await this.fetchFriendsLeaderboard();
     return res;
+  },
+
+  async fetchCourses() {
+    this.learningLoading = true;
+    try {
+      const courses = await this.apiRequest('/courses');
+      if (Array.isArray(courses)) {
+        this.coursesList = courses;
+        if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.courses) {
+          ARISE_DATA.courses = courses.map(c => ({
+            id: c.id,
+            slug: c.slug,
+            title: c.title,
+            description: c.description,
+            category: c.category,
+            duration: c.duration,
+            lessonsCount: c.lessons_count,
+            completedLessons: c.completed_lessons,
+            assessmentPassed: c.is_completed,
+            assessmentScore: c.best_score,
+            skills: c.skills || [],
+            curriculum: (c.curriculum || []).map(l => ({
+              id: l.id,
+              title: l.title,
+              position: l.position,
+              durationMinutes: l.duration_minutes,
+              isCompleted: l.is_completed
+            }))
+          }));
+        }
+      }
+      this.learningLoading = false;
+      this.notify();
+      return courses;
+    } catch (err) {
+      console.warn('Failed to fetch courses:', err.message);
+      this.learningLoading = false;
+      return null;
+    }
+  },
+
+  async fetchCourseDetail(courseId) {
+    this.activeCourseId = courseId;
+    this.learningLoading = true;
+    try {
+      const detail = await this.apiRequest(`/courses/${courseId}`);
+      this.activeCourseDetail = detail;
+      this.activeCourse = detail;
+
+      const completed = new Set();
+      if (Array.isArray(detail.curriculum)) {
+        detail.curriculum.forEach(l => {
+          if (l.is_completed) completed.add(l.id);
+        });
+      }
+      this.completedLessonIds = completed;
+
+      if (detail.is_completed && detail.best_score) {
+        this.quizScore = detail.best_score;
+        this.quizPassed = true;
+      }
+
+      this.learningLoading = false;
+      this.notify();
+      return detail;
+    } catch (err) {
+      console.warn(`Failed to fetch course detail for ${courseId}:`, err.message);
+      this.learningLoading = false;
+      return null;
+    }
+  },
+
+  async fetchLessonDetail(lessonId) {
+    this.activeLessonId = lessonId;
+    try {
+      const lesson = await this.apiRequest(`/lessons/${lessonId}`);
+      this.activeLessonDetail = lesson;
+      this.notify();
+      return lesson;
+    } catch (err) {
+      console.warn(`Failed to fetch lesson detail for ${lessonId}:`, err.message);
+      return null;
+    }
+  },
+
+  async completeLesson(lessonId) {
+    try {
+      const res = await this.apiRequest(`/lessons/${lessonId}/complete`, 'POST');
+      if (res && res.is_completed) {
+        this.completedLessonIds.add(lessonId);
+        if (this.activeCourseDetail && Array.isArray(this.activeCourseDetail.curriculum)) {
+          const l = this.activeCourseDetail.curriculum.find(item => item.id === lessonId);
+          if (l) l.is_completed = true;
+          this.activeCourseDetail.completed_lessons = this.activeCourseDetail.curriculum.filter(x => x.is_completed).length;
+        }
+        if (this.activeLessonDetail && this.activeLessonDetail.id === lessonId) {
+          this.activeLessonDetail.is_completed = true;
+        }
+        this.fetchCourses().catch(() => {});
+        this.notify();
+      }
+      return res;
+    } catch (err) {
+      console.warn(`Failed to complete lesson ${lessonId}:`, err.message);
+      throw err;
+    }
+  },
+
+  async submitFinalTest(courseId, answers) {
+    this.quizSubmitting = true;
+    this.notify();
+    try {
+      const res = await this.apiRequest(`/courses/${courseId}/final-test-attempts`, 'POST', { answers });
+      this.lastAttempt = res;
+      this.quizScore = res.score_percentage;
+      this.quizPassed = res.is_passed;
+      this.quizBreakdown = res.breakdown || null;
+      this.quizSubmitted = true;
+      this.quizSubmitting = false;
+
+      if (res.is_passed) {
+        if (this.activeCourseDetail) {
+          this.activeCourseDetail.is_completed = true;
+          this.activeCourseDetail.best_score = Math.max(this.activeCourseDetail.best_score || 0, res.score_percentage);
+        }
+        await this.fetchCourseCompletions();
+        await this.fetchCourses();
+        if (typeof AriseAuth !== 'undefined' && typeof AriseAuth.syncProfileWithBackend === 'function') {
+          AriseAuth.syncProfileWithBackend().catch(() => {});
+        }
+      }
+      this.notify();
+      return res;
+    } catch (err) {
+      this.quizSubmitting = false;
+      this.notify();
+      throw err;
+    }
+  },
+
+  async fetchCourseCompletions() {
+    if (!this.authToken) return [];
+    try {
+      const res = await this.apiRequest('/me/course-completions');
+      this.courseCompletions = Array.isArray(res) ? res : [];
+      if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
+        ARISE_DATA.currentUser.coursesCompleted = this.courseCompletions.length;
+      }
+      this.notify();
+      return this.courseCompletions;
+    } catch (err) {
+      return [];
+    }
   }
 };
 

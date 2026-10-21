@@ -203,6 +203,11 @@ const AriseAuth = {
       } else if (typeof AriseState !== 'undefined' && typeof AriseState.syncPracticeStats === 'function') {
         AriseState.syncPracticeStats().catch(() => {});
       }
+
+      if (typeof AriseState !== 'undefined') {
+        if (typeof AriseState.fetchCourses === 'function') AriseState.fetchCourses().catch(() => {});
+        if (typeof AriseState.fetchCourseCompletions === 'function') AriseState.fetchCourseCompletions().catch(() => {});
+      }
     }
   },
 
