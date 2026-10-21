@@ -4,10 +4,6 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 
-@pytest.fixture
-def client():
-    return TestClient(app)
-
 
 def test_security_headers_present(client):
     """
