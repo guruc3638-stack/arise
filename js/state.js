@@ -49,10 +49,19 @@ const AriseState = {
   submissionsHistory: {}, // problemId -> array of submissions
 
   // Self Study state
-  activeDoc: ARISE_DATA.studyLibrary[0],
+  studyFiles: [],
+  studyLoading: false,
+  studySummary: { total_seconds: 0, total_minutes: 0, total_hours: 0.0, session_count: 0, last_session_at: null },
+  activeStudySessionId: null,
+  activeDoc: (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.studyLibrary) ? ARISE_DATA.studyLibrary[0] : null,
   timerRunning: false,
-  timerSeconds: 1420, // 23 mins 40 secs
+  timerSeconds: 0,
   timerInterval: null,
+
+  // Badges state
+  badgesList: [],
+  badgesTotalUnlocked: 0,
+  badgesLoading: false,
 
   // Learning state
   coursesList: [],
@@ -511,6 +520,161 @@ const AriseState = {
       return this.courseCompletions;
     } catch (err) {
       return [];
+    }
+  },
+
+  async fetchStudyFiles() {
+    if (!this.authToken) return [];
+    this.studyLoading = true;
+    try {
+      const files = await this.apiRequest('/study-files');
+      this.studyFiles = Array.isArray(files) ? files : [];
+      if (typeof ARISE_DATA !== 'undefined') {
+        ARISE_DATA.studyLibrary = this.studyFiles.map(f => ({
+          id: f.id,
+          title: f.original_filename,
+          subject: 'Self Study Material',
+          pages: 1,
+          fileSize: `${(f.size_bytes / (1024 * 1024)).toFixed(1)} MB`,
+          lastOpened: 'Just now',
+          created_at: f.created_at
+        }));
+      }
+      this.studyLoading = false;
+      this.notify();
+      return this.studyFiles;
+    } catch (err) {
+      this.studyLoading = false;
+      return [];
+    }
+  },
+
+  async uploadStudyPdf(file) {
+    if (!file) throw new Error("Please select a file to upload.");
+    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    if (!token) throw new Error("Authentication required.");
+
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      const err = new Error("Uploaded file is not a valid PDF document.");
+      err.status = 400;
+      throw err;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      const err = new Error("File size exceeds conservative 10MB limit.");
+      err.status = 413;
+      throw err;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${this.apiBase}/study-files`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const err = new Error(data.message || data.detail || 'Upload failed');
+      err.status = res.status;
+      throw err;
+    }
+
+    await this.fetchStudyFiles();
+    return data;
+  },
+
+  async deleteStudyFile(fileId) {
+    const res = await this.apiRequest(`/study-files/${fileId}`, 'DELETE');
+    await this.fetchStudyFiles();
+    return res;
+  },
+
+  async startStudySession(studyFileId = null) {
+    try {
+      const res = await this.apiRequest('/study-sessions', 'POST', { study_file_id: studyFileId });
+      this.activeStudySessionId = res.id;
+      this.timerRunning = true;
+      this.timerSeconds = 0;
+      if (!this.timerInterval && typeof setInterval !== 'undefined') {
+        this.timerInterval = setInterval(() => {
+          if (this.timerRunning) {
+            this.timerSeconds++;
+            if (this.currentScreen === 'pdf-reader') this.notify();
+          }
+        }, 1000);
+      }
+      this.notify();
+      return res;
+    } catch (err) {
+      console.warn('Could not start study session:', err.message);
+      return null;
+    }
+  },
+
+  async finishStudySession() {
+    this.timerRunning = false;
+    if (this.timerInterval && typeof clearInterval !== 'undefined') {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    let finishRes = null;
+    if (this.activeStudySessionId) {
+      try {
+        finishRes = await this.apiRequest(`/study-sessions/${this.activeStudySessionId}/finish`, 'POST');
+      } catch (err) {
+        console.warn('Could not record finish study session:', err.message);
+      }
+    }
+    this.activeStudySessionId = null;
+    await this.fetchStudySummary();
+    this.notify();
+    return finishRes;
+  },
+
+  async fetchStudySummary() {
+    if (!this.authToken) return null;
+    try {
+      const summary = await this.apiRequest('/study-sessions/summary');
+      this.studySummary = summary;
+      this.notify();
+      return summary;
+    } catch (err) {
+      return null;
+    }
+  },
+
+  async fetchBadges() {
+    if (!this.authToken) return null;
+    this.badgesLoading = true;
+    try {
+      const res = await this.apiRequest('/me/badges');
+      if (res && Array.isArray(res.badges)) {
+        this.badgesList = res.badges;
+        this.badgesTotalUnlocked = res.total_unlocked;
+        if (typeof ARISE_DATA !== 'undefined') {
+          ARISE_DATA.badges = res.badges.map(b => ({
+            id: b.id,
+            slug: b.slug,
+            name: b.name,
+            desc: b.description,
+            category: b.category,
+            status: b.is_unlocked ? 'earned' : 'locked',
+            unlockedDate: b.unlocked_at ? new Date(b.unlocked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null,
+            progress: b.progress_percent || 0,
+            requirement: b.requirement
+          }));
+        }
+      }
+      this.badgesLoading = false;
+      this.notify();
+      return res;
+    } catch (err) {
+      this.badgesLoading = false;
+      return null;
     }
   }
 };

@@ -9,17 +9,9 @@ from app.repositories.learning_repository import learning_repo
 
 @pytest.fixture(autouse=True)
 async def cleanup():
-    """Clear repositories before and after every test."""
+    """Clear repositories before every test."""
     await profile_repo.clear()
     await learning_repo.clear()
-    yield
-    await profile_repo.clear()
-    await learning_repo.clear()
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 def auth_headers_for(user_id: str, email: str = "test@example.com") -> dict:

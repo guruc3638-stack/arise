@@ -24,7 +24,10 @@ function renderOverviewDashboard() {
     { id: "ARISE-P203", title: "Hydro-Reservoir Capacity Optimizer", difficulty: "Medium", topic: "Arrays", time: "4 days ago", xp: 85 }
   ]);
 
-  const earnedBadges = isCleanAccount ? [] : ARISE_DATA.badges.filter(b => b.status === 'earned').slice(0, 3);
+  const allBadges = (AriseState.badgesList && AriseState.badgesList.length > 0)
+    ? AriseState.badgesList
+    : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.badges) ? ARISE_DATA.badges : []);
+  const earnedBadges = allBadges.filter(b => b.is_unlocked || b.status === 'earned').slice(0, 3);
   const activeScopeLeaderboard = (AriseState.leaderboardData && AriseState.leaderboardData.scope === currentScope && AriseState.leaderboardData.entries && AriseState.leaderboardData.entries.length > 0)
     ? AriseState.leaderboardData.entries.map(e => ({
         rank: e.rank,
@@ -374,7 +377,7 @@ function renderOverviewDashboard() {
                   </div>
                   <div style="display: flex; flex-direction: column; min-width: 0;">
                     <span style="font-size: 12.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${b.name}</span>
-                    <span style="font-size: 10.5px; color: var(--text-muted);">Unlocked ${b.unlockedDate}</span>
+                    <span style="font-size: 10.5px; color: var(--text-muted);">Unlocked ${b.unlocked_at ? new Date(b.unlocked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : (b.unlockedDate || 'Recent')}</span>
                   </div>
                 </div>
               `).join('') : `

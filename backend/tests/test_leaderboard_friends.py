@@ -11,19 +11,10 @@ from app.repositories.friendship_repository import friendship_repo
 
 @pytest.fixture(autouse=True)
 async def cleanup():
-    """Clear repositories before and after every test."""
+    """Clear repositories before every test."""
     await profile_repo.clear()
     await submission_repo.clear()
     await friendship_repo.clear()
-    yield
-    await profile_repo.clear()
-    await submission_repo.clear()
-    await friendship_repo.clear()
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 def auth_headers_for(user_id: str, email: str = "test@example.com") -> dict:

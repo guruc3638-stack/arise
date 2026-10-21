@@ -13,21 +13,11 @@ from app.repositories.badge_repository import badge_repo
 
 @pytest.fixture(autouse=True)
 async def cleanup():
-    """Clear repositories before and after every test."""
+    """Clear repositories before every test."""
     await profile_repo.clear()
     await submission_repo.clear()
     await self_study_repo.clear()
     await badge_repo.clear()
-    yield
-    await profile_repo.clear()
-    await submission_repo.clear()
-    await self_study_repo.clear()
-    await badge_repo.clear()
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 def auth_headers_for(user_id: str, email: str = "test@example.com") -> dict:

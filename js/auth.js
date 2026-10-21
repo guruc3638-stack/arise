@@ -207,6 +207,9 @@ const AriseAuth = {
       if (typeof AriseState !== 'undefined') {
         if (typeof AriseState.fetchCourses === 'function') AriseState.fetchCourses().catch(() => {});
         if (typeof AriseState.fetchCourseCompletions === 'function') AriseState.fetchCourseCompletions().catch(() => {});
+        if (typeof AriseState.fetchBadges === 'function') AriseState.fetchBadges().catch(() => {});
+        if (typeof AriseState.fetchStudyFiles === 'function') AriseState.fetchStudyFiles().catch(() => {});
+        if (typeof AriseState.fetchStudySummary === 'function') AriseState.fetchStudySummary().catch(() => {});
       }
     }
   },

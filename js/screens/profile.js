@@ -17,8 +17,25 @@ function renderProfileView() {
   const user = ARISE_DATA.currentUser;
   const isCleanAccount = (!user.verifiedXp || user.verifiedXp === 0);
   const currentRankDisplay = (isCleanAccount || !user.rank || !user.rank.maharashtra) ? "Unranked" : `#${user.rank.maharashtra}`;
-  const completedCourses = isCleanAccount ? [] : ARISE_DATA.courses.filter(c => c.assessmentPassed);
-  const earnedBadges = isCleanAccount ? [] : ARISE_DATA.badges.filter(b => b.status === 'earned');
+
+  // Fetch badges if not loaded
+  if (AriseState.authToken && (!AriseState.badgesList || AriseState.badgesList.length === 0) && !AriseState.badgesLoading) {
+    if (typeof AriseState.fetchBadges === 'function') AriseState.fetchBadges().catch(() => {});
+  }
+
+  const completedCourses = (AriseState.courseCompletions && AriseState.courseCompletions.length > 0)
+    ? AriseState.courseCompletions.map(comp => ({
+        title: comp.course_title,
+        skills: ['Verified Completion'],
+        assessmentScore: comp.score_percent
+      }))
+    : (isCleanAccount ? [] : (ARISE_DATA.courses || []).filter(c => c.assessmentPassed));
+
+  const allBadges = (AriseState.badgesList && AriseState.badgesList.length > 0)
+    ? AriseState.badgesList
+    : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.badges) ? ARISE_DATA.badges : []);
+
+  const earnedBadges = allBadges.filter(b => b.is_unlocked || b.status === 'earned');
 
   return `
     <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -179,7 +196,13 @@ function renderProfileView() {
 
 // SCREEN U: ACHIEVEMENT BADGES COLLECTION
 function renderBadgesScreen() {
-  const badges = ARISE_DATA.badges;
+  if (AriseState.authToken && (!AriseState.badgesList || AriseState.badgesList.length === 0) && !AriseState.badgesLoading) {
+    if (typeof AriseState.fetchBadges === 'function') AriseState.fetchBadges().catch(() => {});
+  }
+
+  const badges = (AriseState.badgesList && AriseState.badgesList.length > 0)
+    ? AriseState.badgesList
+    : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.badges) ? ARISE_DATA.badges : []);
 
   return `
     <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -197,9 +220,12 @@ function renderBadgesScreen() {
 
       <div class="badges-grid">
         ${badges.map(b => {
-          const isEarned = b.status === 'earned';
+          const isEarned = !!(b.is_unlocked || b.status === 'earned');
+          const unlockedStr = b.unlocked_at ? new Date(b.unlocked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : (b.unlockedDate || 'Recent');
+          const progressVal = b.progress_percent != null ? b.progress_percent : (b.progress || 0);
+
           return `
-            <div class="badge-card ${isEarned ? '' : 'locked'}" onclick="openBadgeDetail('${b.id}')">
+            <div class="badge-card ${isEarned ? '' : 'locked'}" onclick="openBadgeDetail('${b.id || b.slug}')">
               <div style="width: 48px; height: 48px; border-radius: 50%; background: ${isEarned ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.04)'}; border: 2px solid ${isEarned ? '#8B5CF6' : 'rgba(255,255,255,0.15)'}; display: flex; align-items: center; justify-content: center; font-size: 20px; color: ${isEarned ? '#C4B5FD' : 'var(--text-muted)'}; margin-bottom: 4px;">
                 ${isEarned ? '★' : '🔒'}
               </div>
@@ -208,16 +234,16 @@ function renderBadgesScreen() {
                 ${b.name}
               </div>
               <p style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px;">
-                ${b.desc}
+                ${b.description || b.desc || ''}
               </p>
 
               <div style="margin-top: auto; width: 100%; padding-top: 8px; border-top: 1px solid var(--border-subtle); font-size: 11px;">
                 ${isEarned ? `
-                  <span style="color: var(--success); font-weight: 600;">Unlocked ${b.unlockedDate}</span>
+                  <span style="color: var(--success); font-weight: 600;">Unlocked ${unlockedStr}</span>
                 ` : `
-                  <div style="color: var(--text-muted); margin-bottom: 4px;">Progress: ${b.progress}%</div>
+                  <div style="color: var(--text-muted); margin-bottom: 4px;">Progress: ${progressVal}%</div>
                   <div class="progress-bar-track">
-                    <div class="progress-bar-fill" style="width: ${b.progress}%;"></div>
+                    <div class="progress-bar-fill" style="width: ${progressVal}%;"></div>
                   </div>
                 `}
               </div>
@@ -230,8 +256,17 @@ function renderBadgesScreen() {
 }
 
 function openBadgeDetail(badgeId) {
-  const b = ARISE_DATA.badges.find(item => item.id === badgeId);
+  const allBadges = (AriseState.badgesList && AriseState.badgesList.length > 0)
+    ? AriseState.badgesList
+    : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.badges) ? ARISE_DATA.badges : []);
+
+  const b = allBadges.find(item => item.id === badgeId || item.slug === badgeId);
   if (!b) return;
+
+  const isEarned = !!(b.is_unlocked || b.status === 'earned');
+  const unlockedStr = b.unlocked_at ? new Date(b.unlocked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : (b.unlockedDate || 'Recent');
+  const descText = b.description || b.desc || '';
+  const reqText = b.requirement || 'Confirmed judge submission across verified problem sets.';
 
   let modal = document.getElementById('badge-detail-modal');
   if (!modal) {
@@ -245,25 +280,25 @@ function openBadgeDetail(badgeId) {
     <div class="modal-window">
       <div class="modal-header">
         <h3 style="font-size: 16px; font-weight: 700;">Achievement Details</h3>
-        <button class="btn btn-ghost btn-sm" onclick="modal.classList.remove('open')">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('badge-detail-modal').classList.remove('open')">✕</button>
       </div>
       <div class="modal-body" style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--space-4);">
-        <div style="width: 64px; height: 64px; border-radius: 50%; background: ${b.status === 'earned' ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)'}; border: 2px solid ${b.status === 'earned' ? '#8B5CF6' : 'rgba(255,255,255,0.1)'}; display: flex; align-items: center; justify-content: center; font-size: 28px; color: ${b.status === 'earned' ? '#C4B5FD' : 'var(--text-muted)'};">
-          ${b.status === 'earned' ? '★' : '🔒'}
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: ${isEarned ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)'}; border: 2px solid ${isEarned ? '#8B5CF6' : 'rgba(255,255,255,0.1)'}; display: flex; align-items: center; justify-content: center; font-size: 28px; color: ${isEarned ? '#C4B5FD' : 'var(--text-muted)'};">
+          ${isEarned ? '★' : '🔒'}
         </div>
         <h2 style="font-size: 20px; font-weight: 700; color: #FFFFFF;">${b.name}</h2>
         <p style="font-size: 13.5px; color: var(--text-secondary); max-width: 420px; line-height: 1.6;">
-          ${b.desc}
+          ${descText}
         </p>
 
         <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 16px; width: 100%; text-align: left; font-size: 12.5px;">
           <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">Requirement Condition</div>
-          <div style="color: var(--text-primary); font-family: var(--font-mono);">${b.requirement || 'Confirmed judge submission across verified problem sets.'}</div>
-          ${b.status === 'earned' ? `<div style="color: var(--success); font-weight: 600; margin-top: 8px;">✓ Achieved on ${b.unlockedDate}</div>` : ''}
+          <div style="color: var(--text-primary); font-family: var(--font-mono);">${reqText}</div>
+          ${isEarned ? `<div style="color: var(--success); font-weight: 600; margin-top: 8px;">✓ Achieved on ${unlockedStr}</div>` : ''}
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="modal.classList.remove('open')">Close</button>
+        <button class="btn btn-primary" onclick="document.getElementById('badge-detail-modal').classList.remove('open')">Close</button>
       </div>
     </div>
   `;
