@@ -608,7 +608,7 @@ async function lookupAndAddFriend() {
 
 async function acceptFriendRequestAction(requestId, requesterName) {
   try {
-    await AriseState.acceptFriendRequest(requestId);
+    await AriseState.acceptFriendRequest(requestId, null, requesterName);
     showToast(`Accepted friend request from ${requesterName}!`, 'success');
     AriseState.notify();
   } catch (err) {

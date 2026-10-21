@@ -142,6 +142,9 @@ const AriseAuth = {
       localStorage.removeItem('arise_profile');
       // Clear any cached query states
       localStorage.removeItem('arise_recent_solves');
+      if (typeof ARISE_DATA !== 'undefined') {
+        ARISE_DATA.notifications = [];
+      }
     } catch (e) {}
   },
 
@@ -214,6 +217,8 @@ const AriseAuth = {
       }
 
       if (typeof AriseState !== 'undefined') {
+        if (typeof AriseState.loadUserNotifications === 'function') AriseState.loadUserNotifications(profile.uid);
+        if (typeof AriseState.fetchFriendRequests === 'function') AriseState.fetchFriendRequests().catch(() => {});
         if (typeof AriseState.fetchCourses === 'function') AriseState.fetchCourses().catch(() => {});
         if (typeof AriseState.fetchCourseCompletions === 'function') AriseState.fetchCourseCompletions().catch(() => {});
         if (typeof AriseState.fetchBadges === 'function') AriseState.fetchBadges().catch(() => {});

@@ -1398,6 +1398,59 @@ function handleJudgeEvaluationResult(result, p, lang) {
             AriseAuth.syncProfileWithBackend().catch(() => {});
           }
         }
+        // Add verified solve notification and milestone notifications
+        if (typeof AriseState !== 'undefined' && typeof AriseState.addNotification === 'function') {
+          AriseState.addNotification({
+            title: "⚡ Judge Verification Confirmed",
+            body: `Your solution for '${p.title}' passed all test cases! +${award} XP awarded.`,
+            type: "solve_success",
+            meta: { problemId: p.id, xp: award }
+          });
+
+          const totalSolved = ARISE_DATA.currentUser.solvedStats.total;
+          if (totalSolved === 1) {
+            AriseState.addNotification({
+              title: "🚀 First Milestone Achieved!",
+              body: "You conquered your very first algorithmic challenge on ARISE! Your journey to the top begins.",
+              type: "milestone",
+              meta: { milestone: "first_solve" }
+            });
+          } else if (totalSolved === 5) {
+            AriseState.addNotification({
+              title: "🌟 5 Solves Milestone!",
+              body: "5 algorithmic challenges mastered! Your ranking is rising.",
+              type: "milestone",
+              meta: { milestone: "5_solves" }
+            });
+          } else if (totalSolved === 10) {
+            AriseState.addNotification({
+              title: "🔥 10 Solves Milestone!",
+              body: "Double digits! 10 verified solutions recorded in the ARISE judge cluster.",
+              type: "milestone",
+              meta: { milestone: "10_solves" }
+            });
+          } else if (totalSolved === 25) {
+            AriseState.addNotification({
+              title: "💎 25 Solves Milestone!",
+              body: "Quarter-century milestone! 25 judge-verified problem solutions.",
+              type: "milestone",
+              meta: { milestone: "25_solves" }
+            });
+          }
+
+          if (ARISE_DATA.currentUser.rank && ARISE_DATA.currentUser.rank.maharashtra) {
+            const currentRank = ARISE_DATA.currentUser.rank.maharashtra;
+            if (!AriseState._notifiedStateRank || AriseState._notifiedStateRank > currentRank) {
+              AriseState._notifiedStateRank = currentRank;
+              AriseState.addNotification({
+                title: "📈 Official Rank Milestone",
+                body: `You are ranked #${currentRank} in Maharashtra on the official leaderboard!`,
+                type: "rank_update",
+                meta: { rank: currentRank }
+              });
+            }
+          }
+        }
       }
       showToast(`Judge Confirmed: Accepted! +${award} Verified XP awarded.`, 'success');
     } else {

@@ -99,6 +99,89 @@ const AriseState = {
   // Mobile more sheet open
   mobileMoreOpen: false,
 
+  // Notification Management
+  loadUserNotifications(userUid) {
+    const uid = userUid || (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser ? ARISE_DATA.currentUser.uid : 'local');
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('arise_notifs_' + uid);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && typeof ARISE_DATA !== 'undefined') {
+            ARISE_DATA.notifications = parsed;
+            return parsed;
+          }
+        }
+      } catch (e) {}
+    }
+    if (typeof ARISE_DATA !== 'undefined' && !Array.isArray(ARISE_DATA.notifications)) {
+      ARISE_DATA.notifications = [];
+    }
+    return (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.notifications) ? ARISE_DATA.notifications : [];
+  },
+
+  saveNotificationsToStorage() {
+    if (typeof localStorage === 'undefined' || typeof ARISE_DATA === 'undefined') return;
+    const uid = (ARISE_DATA.currentUser ? ARISE_DATA.currentUser.uid : 'local');
+    try {
+      localStorage.setItem('arise_notifs_' + uid, JSON.stringify(ARISE_DATA.notifications || []));
+    } catch (e) {}
+  },
+
+  addNotification(notif) {
+    if (!notif) return null;
+    if (typeof ARISE_DATA === 'undefined') return null;
+    if (!Array.isArray(ARISE_DATA.notifications)) {
+      ARISE_DATA.notifications = [];
+    }
+
+    // Prevent duplicate notification by id or requestId
+    if (notif.id && ARISE_DATA.notifications.some(n => n.id === notif.id)) {
+      return null;
+    }
+    if (notif.requestId && ARISE_DATA.notifications.some(n => n.requestId === notif.requestId)) {
+      return null;
+    }
+
+    const item = {
+      id: notif.id || ('notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000)),
+      title: notif.title || 'Notification',
+      body: notif.body || '',
+      time: notif.time || 'Just now',
+      read: false,
+      type: notif.type || 'info', // 'friend_request' | 'friend_request_sent' | 'friend_added' | 'solve_success' | 'milestone' | 'course_completion' | 'badge_unlocked' | 'rank_update'
+      senderUid: notif.senderUid || null,
+      senderName: notif.senderName || null,
+      recipientUid: notif.recipientUid || null,
+      requestId: notif.requestId || null,
+      meta: notif.meta || null
+    };
+
+    ARISE_DATA.notifications.unshift(item);
+    this.saveNotificationsToStorage();
+    this.notify();
+    return item;
+  },
+
+  markNotificationRead(notifId) {
+    if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.notifications)) {
+      const n = ARISE_DATA.notifications.find(item => item.id === notifId);
+      if (n) {
+        n.read = true;
+        this.saveNotificationsToStorage();
+        this.notify();
+      }
+    }
+  },
+
+  markAllNotificationsRead() {
+    if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.notifications)) {
+      ARISE_DATA.notifications.forEach(n => { n.read = true; });
+      this.saveNotificationsToStorage();
+      this.notify();
+    }
+  },
+
   // Listeners
   listeners: [],
 
@@ -390,6 +473,19 @@ const AriseState = {
     try {
       const res = await this.apiRequest('/friend-requests');
       this.friendRequests = res || { incoming: [], outgoing: [] };
+      if (Array.isArray(this.friendRequests.incoming)) {
+        this.friendRequests.incoming.forEach(req => {
+          this.addNotification({
+            id: `notif-incoming-${req.id}`,
+            requestId: req.id,
+            title: "Friend Request Received",
+            body: `${req.requester_name || req.requester_uid} (ID: ${req.requester_uid}) sent you a friend request to compare DSA solves.`,
+            type: "friend_request",
+            senderUid: req.requester_uid,
+            senderName: req.requester_name
+          });
+        });
+      }
       this.notify();
       return this.friendRequests;
     } catch (err) {
@@ -398,23 +494,72 @@ const AriseState = {
   },
 
   async sendFriendRequest(recipientUid) {
-    const res = await this.apiRequest('/friend-requests', 'POST', { recipient_uid: recipientUid });
-    await this.fetchFriendRequests();
+    let res = null;
+    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    if (token) {
+      res = await this.apiRequest('/friend-requests', 'POST', { recipient_uid: recipientUid });
+      await this.fetchFriendRequests();
+    } else {
+      res = { recipient_uid: recipientUid, recipient_name: recipientUid };
+      if (!this.friendRequests) this.friendRequests = { incoming: [], outgoing: [] };
+      this.friendRequests.outgoing.push({
+        id: 'fr-' + Date.now(),
+        recipient_uid: recipientUid,
+        recipient_name: recipientUid,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    const targetUid = (res && res.recipient_uid) || recipientUid;
+    const targetName = (res && res.recipient_name) || targetUid;
+    this.addNotification({
+      title: "Friend Request Sent",
+      body: `Friend request sent to student ID ${targetUid}. Waiting for mutual acceptance.`,
+      type: "friend_request_sent",
+      recipientUid: targetUid
+    });
     return res;
   },
 
-  async acceptFriendRequest(requestId) {
-    const res = await this.apiRequest(`/friend-requests/${requestId}/accept`, 'POST');
-    await this.fetchFriendRequests();
-    await this.fetchFriends();
-    await this.fetchFriendsLeaderboard();
+  async acceptFriendRequest(requestId, requesterUid = null, requesterName = null) {
+    let res = null;
+    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    if (token && requestId && !String(requestId).startsWith('local-')) {
+      res = await this.apiRequest(`/friend-requests/${requestId}/accept`, 'POST');
+      await this.fetchFriendRequests();
+      await this.fetchFriends();
+      await this.fetchFriendsLeaderboard();
+    }
+    const partnerUid = (res && res.requester_uid) || requesterUid || 'Student';
+    const partnerName = (res && res.requester_name) || requesterName || partnerUid;
+
+    // Mark the request notification as read
+    if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.notifications)) {
+      const reqNotif = ARISE_DATA.notifications.find(n => n.requestId === requestId || n.senderUid === partnerUid);
+      if (reqNotif) reqNotif.read = true;
+    }
+
+    this.addNotification({
+      title: "Friend Added",
+      body: `You are now study partners with ${partnerName} (ID: ${partnerUid})! You can compare solves on the Friends Leaderboard.`,
+      type: "friend_added",
+      senderUid: partnerUid
+    });
     return res;
   },
 
   async declineFriendRequest(requestId) {
-    const res = await this.apiRequest(`/friend-requests/${requestId}/decline`, 'POST');
-    await this.fetchFriendRequests();
-    return res;
+    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    if (token && requestId && !String(requestId).startsWith('local-')) {
+      await this.apiRequest(`/friend-requests/${requestId}/decline`, 'POST');
+      await this.fetchFriendRequests();
+    }
+    if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.notifications)) {
+      const reqNotif = ARISE_DATA.notifications.find(n => n.requestId === requestId);
+      if (reqNotif) reqNotif.read = true;
+    }
+    this.saveNotificationsToStorage();
+    this.notify();
   },
 
   async removeFriend(uid) {
@@ -555,6 +700,13 @@ const AriseState = {
         if (typeof AriseAuth !== 'undefined' && typeof AriseAuth.syncProfileWithBackend === 'function') {
           AriseAuth.syncProfileWithBackend().catch(() => {});
         }
+        const courseTitle = this.activeCourseDetail?.title || "Computer Science Course";
+        this.addNotification({
+          title: "🎓 Course Certified Milestone!",
+          body: `Congratulations! You scored ${res.score_percentage}% on '${courseTitle}' and earned verified track completion!`,
+          type: "course_completion",
+          meta: { courseId, score: res.score_percentage }
+        });
       }
       this.notify();
       return res;
@@ -806,6 +958,22 @@ const AriseState = {
             requirement: b.requirement
           }));
         }
+
+        // Notify user about unlocked badge milestones
+        if (!this._notifiedBadgeSlugs) {
+          this._notifiedBadgeSlugs = new Set();
+        }
+        res.badges.forEach(b => {
+          if (b.is_unlocked && !this._notifiedBadgeSlugs.has(b.slug)) {
+            this._notifiedBadgeSlugs.add(b.slug);
+            this.addNotification({
+              title: `🏆 Milestone Unlocked: ${b.name}`,
+              body: `Achievement unlocked: ${b.description}`,
+              type: "badge_unlocked",
+              meta: { badgeSlug: b.slug }
+            });
+          }
+        });
       }
       this.badgesLoaded = true;
       this.badgesLoading = false;

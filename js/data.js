@@ -3999,34 +3999,8 @@ const ARISE_DATA = {
     }
   ],
 
-  // System Notifications
-  notifications: [
-    {
-      id: "notif-1",
-      title: "Friend Request Received",
-      body: "Aniket More (COEP Pune) sent you a friend request to compare DSA solves.",
-      time: "2 hours ago",
-      read: false,
-      type: "friend_request",
-      senderUid: "ARISE-5J1Q7M"
-    },
-    {
-      id: "notif-2",
-      title: "Judge Verification Confirmed",
-      body: "Your submission for 'Pairwise Sensor Target Calibration' was verified by the judge. +40 XP awarded.",
-      time: "Yesterday",
-      read: true,
-      type: "solve_success"
-    },
-    {
-      id: "notif-3",
-      title: "Rank Update in Maharashtra",
-      body: "You moved up 2 spots to Rank #14 in Maharashtra after your verified solve.",
-      time: "2 days ago",
-      read: true,
-      type: "rank_update"
-    }
-  ]
+  // System Notifications (Populated dynamically on friend requests & milestone achievements)
+  notifications: []
 };
 
 /* ==========================================================================
