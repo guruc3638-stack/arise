@@ -114,6 +114,22 @@ function jumpToScreen(screenVal) {
 function renderSidebarNavigation() {
   const current = AriseState.currentScreen;
   const isCollapsed = AriseState.sidebarCollapsed;
+  const user = (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) ? ARISE_DATA.currentUser : null;
+  const currentScope = AriseState.leaderboardScope || 'maharashtra';
+
+  // Dynamic Leaderboard Badge: Only show rank number after questions are solved and user is ranked
+  let leaderboardBadge = null;
+  if (user && user.verifiedXp > 0) {
+    if (user.rank && user.rank[currentScope]) {
+      leaderboardBadge = `#${user.rank[currentScope]}`;
+    } else if (user.rankDisplay && user.rankDisplay !== 'Unranked') {
+      leaderboardBadge = user.rankDisplay.startsWith('#') ? user.rankDisplay : `#${user.rankDisplay}`;
+    }
+  }
+
+  // Dynamic DSA Badge: Only show number of solved questions after questions are solved
+  const solvedCount = (user && user.solvedStats && user.solvedStats.total > 0) ? user.solvedStats.total : 0;
+  const dsaBadge = solvedCount > 0 ? String(solvedCount) : null;
 
   const navItems = [
     {
@@ -128,14 +144,14 @@ function renderSidebarNavigation() {
       label: 'Leaderboard',
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
       active: current === 'leaderboard',
-      badge: '#14'
+      badge: leaderboardBadge
     },
     {
       id: 'dsa',
       label: 'DSA',
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`,
       active: current.startsWith('dsa'),
-      badge: '17'
+      badge: dsaBadge
     },
     {
       id: 'self-study',
@@ -149,7 +165,7 @@ function renderSidebarNavigation() {
       label: 'Learning',
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`,
       active: current.startsWith('learning') || current.startsWith('course') || current.startsWith('final-assessment') || current.startsWith('lesson'),
-      badge: '≥80%'
+      badge: null
     },
     {
       id: 'profile',

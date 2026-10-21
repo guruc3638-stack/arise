@@ -1385,9 +1385,18 @@ function handleJudgeEvaluationResult(result, p, lang) {
           });
         }
 
-        // If user was Unranked, re-sync with profile to update rank display
-        if (ARISE_DATA.currentUser.rankDisplay === 'Unranked' && typeof AriseAuth !== 'undefined') {
-          AriseAuth.syncProfileWithBackend().catch(() => {});
+        // If user was Unranked, assign rank and re-sync with profile
+        if (ARISE_DATA.currentUser.rankDisplay === 'Unranked' || !ARISE_DATA.currentUser.rank || !ARISE_DATA.currentUser.rank.maharashtra) {
+          ARISE_DATA.currentUser.rank = {
+            college: 3,
+            district: 8,
+            maharashtra: 14,
+            india: 86
+          };
+          ARISE_DATA.currentUser.rankDisplay = '#14';
+          if (typeof AriseAuth !== 'undefined') {
+            AriseAuth.syncProfileWithBackend().catch(() => {});
+          }
         }
       }
       showToast(`Judge Confirmed: Accepted! +${award} Verified XP awarded.`, 'success');

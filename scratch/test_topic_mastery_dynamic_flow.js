@@ -51,6 +51,7 @@ runFile('d:/ARISE/js/auth.js');
 runFile('d:/ARISE/js/screens/overview.js');
 runFile('d:/ARISE/js/judge-engine.js');
 runFile('d:/ARISE/js/screens/dsa.js');
+runFile('d:/ARISE/js/app.js');
 
 console.log('✓ All frontend scripts loaded into VM context.');
 
@@ -88,6 +89,18 @@ if (!width0Matches || width0Matches.length < 17) {
   process.exit(1);
 }
 console.log('✓ renderDsaTopicExplorer renders all 17 topic cards with Solved: 0 / <total> and 0% progress bars.');
+
+// Verify Sidebar Navigation initially does NOT show numbers
+const initialSidebarHtml = sandbox.renderSidebarNavigation();
+if (initialSidebarHtml.includes('#14')) {
+  console.error('FAIL: Sidebar navigation must NOT show #14 initially!');
+  process.exit(1);
+}
+if (initialSidebarHtml.includes('class="nav-badge">17<') || initialSidebarHtml.includes('class="nav-badge">0<')) {
+  console.error('FAIL: Sidebar navigation must NOT show 17 or 0 initially!');
+  process.exit(1);
+}
+console.log('✓ Sidebar Navigation initially has no numbers (clean rail with 0 badges).');
 
 // STEP 2: Solve First Question (Arrays: ARISE-P101)
 console.log('\n--- STEP 2: SOLVE FIRST QUESTION (Arrays: ARISE-P101) ---');
@@ -143,6 +156,18 @@ if (sandbox.getTopicSolvedCount(stringsTopic) !== 0) {
 }
 console.log('✓ renderDsaTopicExplorer displays Arrays with "Solved: 1 / 42" and 2% cyan progress bar.');
 
+// Verify Sidebar Navigation NOW shows numbers after solve 1
+const sidebarHtmlAfterSolve1 = sandbox.renderSidebarNavigation();
+if (!sidebarHtmlAfterSolve1.includes('#14')) {
+  console.error('FAIL: Sidebar navigation must show #14 after solving problem!');
+  process.exit(1);
+}
+if (!sidebarHtmlAfterSolve1.includes('class="nav-badge">1<')) {
+  console.error('FAIL: Sidebar navigation must show 1 on DSA after 1 solve!');
+  process.exit(1);
+}
+console.log('✓ Sidebar Navigation now displays Leaderboard #14 and DSA 1 badges.');
+
 // STEP 3: Solve Second Question in Same Topic (Arrays: ARISE-P103)
 console.log('\n--- STEP 3: SOLVE SECOND QUESTION IN SAME TOPIC (Arrays: ARISE-P103) ---');
 const p103 = sandbox.ARISE_DATA.problems.find(p => p.id === 'ARISE-P103');
@@ -170,6 +195,14 @@ if (!explorerHtmlAfterSolve2.includes('width: 5%;')) {
   process.exit(1);
 }
 console.log('✓ renderDsaTopicExplorer displays Arrays with "Solved: 2 / 42" and 5% progress bar.');
+
+// Verify Sidebar Navigation DSA badge updates to 2
+const sidebarHtmlAfterSolve2 = sandbox.renderSidebarNavigation();
+if (!sidebarHtmlAfterSolve2.includes('class="nav-badge">2<')) {
+  console.error('FAIL: Sidebar navigation must show 2 on DSA after 2 solves!');
+  process.exit(1);
+}
+console.log('✓ Sidebar Navigation DSA badge dynamically updated to 2.');
 
 // STEP 4: Solve a Different Topic (Stacks: ARISE-P102)
 console.log('\n--- STEP 4: SOLVE A DIFFERENT TOPIC (Stacks: ARISE-P102) ---');
