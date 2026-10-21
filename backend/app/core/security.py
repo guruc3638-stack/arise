@@ -3,11 +3,23 @@ from typing import Optional
 import jwt
 from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import hashlib
 from app.core.config import settings
 from app.core.errors import AuthenticationError
 from app.models.profile import AuthUser
 
 security_bearer = HTTPBearer(auto_error=False)
+
+
+def hash_password(password: str) -> str:
+    """Safe SHA-256 password hashing with server secret salt."""
+    salt = settings.SUPABASE_JWT_SECRET[:16]
+    return hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifies plain password against hashed password."""
+    return hash_password(plain_password) == hashed_password
 
 
 def create_jwt_token(user_id, email: Optional[str] = None, expires_delta: Optional[timedelta] = None) -> str:

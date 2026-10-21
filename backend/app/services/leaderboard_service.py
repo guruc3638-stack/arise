@@ -181,8 +181,21 @@ class LeaderboardService:
             return UserRankResponse(
                 scope=scope,
                 rank=None,
+                rank_display="Hidden",
                 rank_hidden=True,
                 verified_xp=user_xp,
+                total_participants=leaderboard.total_participants,
+                scope_filter=leaderboard.scope_filter,
+            )
+
+        # Rule 4: A user with no verified XP shows "Unranked" with 0 XP
+        if user_xp == 0:
+            return UserRankResponse(
+                scope=scope,
+                rank=None,
+                rank_display="Unranked",
+                rank_hidden=False,
+                verified_xp=0,
                 total_participants=leaderboard.total_participants,
                 scope_filter=leaderboard.scope_filter,
             )
@@ -193,6 +206,7 @@ class LeaderboardService:
                 return UserRankResponse(
                     scope=scope,
                     rank=entry.rank,
+                    rank_display=f"#{entry.rank}",
                     rank_hidden=False,
                     verified_xp=user_xp,
                     total_participants=leaderboard.total_participants,
@@ -202,6 +216,7 @@ class LeaderboardService:
         return UserRankResponse(
             scope=scope,
             rank=None,
+            rank_display="Unranked",
             rank_hidden=False,
             verified_xp=user_xp,
             total_participants=leaderboard.total_participants,

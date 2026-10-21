@@ -168,56 +168,45 @@ const AriseState = {
 
   async apiRequest(path, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
+    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
     const res = await fetch(`${this.apiBase}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : null
     });
+    
+    // Rule 3: Handle expired or invalid tokens: API returns 401, frontend signs user out and redirects to /login
+    if (res.status === 401) {
+      if (typeof AriseAuth !== 'undefined' && typeof AriseAuth.signOut === 'function') {
+        AriseAuth.signOut();
+      }
+      const err = new Error("Session expired or unauthorized. Please log in again.");
+      err.status = 401;
+      throw err;
+    }
+
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.message || 'Request failed');
+      const err = new Error(data.message || 'Request failed');
+      err.code = data.code;
+      err.status = res.status;
+      throw err;
     }
     return data;
   },
 
   async login(email, password) {
-    try {
-      const res = await this.apiRequest('/auth/login', 'POST', { email, password });
-      this.authToken = res.access_token;
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('arise_token', res.access_token);
-      }
-      if (res.user && typeof ARISE_DATA !== 'undefined') {
-        ARISE_DATA.currentUser.uid = res.user.uid;
-        ARISE_DATA.currentUser.name = res.user.display_name;
-      }
-      this.setScreen('overview');
-      if (typeof showToast === 'function') showToast(`Welcome back, ${res.user.display_name}!`, 'success');
-    } catch(err) {
-      if (typeof showToast === 'function') showToast(err.message, 'error');
-      throw err;
+    if (typeof AriseAuth !== 'undefined' && typeof AriseAuth.signIn === 'function') {
+      return await AriseAuth.signIn(email, password);
     }
   },
 
   async signup(email, password, displayName) {
-    try {
-      const res = await this.apiRequest('/auth/signup', 'POST', { email, password, display_name: displayName });
-      this.authToken = res.access_token;
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('arise_token', res.access_token);
-      }
-      if (res.user && typeof ARISE_DATA !== 'undefined') {
-        ARISE_DATA.currentUser.uid = res.user.uid;
-        ARISE_DATA.currentUser.name = res.user.display_name;
-      }
-      this.setScreen('overview');
-      if (typeof showToast === 'function') showToast(`Account created! Your unique ID is ${res.user.uid}`, 'success');
-    } catch(err) {
-      if (typeof showToast === 'function') showToast(err.message, 'error');
-      throw err;
+    if (typeof AriseAuth !== 'undefined' && typeof AriseAuth.signUp === 'function') {
+      return await AriseAuth.signUp(email, password, password, displayName);
     }
   },
 

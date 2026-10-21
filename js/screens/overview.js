@@ -6,21 +6,25 @@
 function renderOverviewDashboard() {
   const user = ARISE_DATA.currentUser;
   const currentScope = AriseState.leaderboardScope || 'maharashtra';
-  const currentRank = user.rank[currentScope] || user.rank.maharashtra;
+  const isCleanAccount = (!user.verifiedXp || user.verifiedXp === 0);
+  const currentRankDisplay = (isCleanAccount || !user.rank || !user.rank[currentScope]) ? "Unranked" : `#${user.rank[currentScope]}`;
 
-  // Sorted topic mastery by solved percentage
+  // Topic mastery: for clean new accounts, userSolved is strictly 0
   const topTopics = [...ARISE_DATA.topics]
-    .sort((a, b) => (b.solved / b.total) - (a.solved / a.total))
+    .map(t => ({
+      ...t,
+      solved: isCleanAccount ? 0 : (t.userSolved !== undefined ? t.userSolved : t.solved)
+    }))
     .slice(0, 5);
 
-  const recentSolves = [
+  const recentSolves = isCleanAccount ? [] : (user.recentSolves || [
     { id: "ARISE-P101", title: "Pairwise Sensor Target Calibration", difficulty: "Easy", topic: "Arrays", time: "Today, 14:20", xp: 40 },
     { id: "ARISE-P102", title: "Valid Packet Frame Delimiters", difficulty: "Easy", topic: "Stacks", time: "Yesterday", xp: 40 },
     { id: "ARISE-P201", title: "Tri-Sensor Equilibrium Calibration", difficulty: "Medium", topic: "Arrays", time: "2 days ago", xp: 80 },
     { id: "ARISE-P203", title: "Hydro-Reservoir Capacity Optimizer", difficulty: "Medium", topic: "Arrays", time: "4 days ago", xp: 85 }
-  ];
+  ]);
 
-  const earnedBadges = ARISE_DATA.badges.filter(b => b.status === 'earned').slice(0, 3);
+  const earnedBadges = isCleanAccount ? [] : ARISE_DATA.badges.filter(b => b.status === 'earned').slice(0, 3);
   const activeScopeLeaderboard = ARISE_DATA.leaderboards[currentScope] || ARISE_DATA.leaderboards.maharashtra;
 
   return `
@@ -80,15 +84,19 @@ function renderOverviewDashboard() {
                 </div>
               </div>
 
-              <!-- Scope selector and rank position -->
+              <!-- Scope selector and rank position (Rule 4: Unranked if 0 XP) -->
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <div style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
                   <span>Rank in <b style="color: var(--text-primary); text-transform: capitalize;">${currentScope}</b>:</span>
-                  <span style="font-size: 18px; font-weight: 700; color: #FFFFFF; font-family: var(--font-mono);">#${currentRank}</span>
-                  <span style="font-size: 12px; font-weight: 600; color: var(--success); display: inline-flex; align-items: center; gap: 2px;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                    ${user.rankMovement}
-                  </span>
+                  <span style="font-size: 18px; font-weight: 700; color: #FFFFFF; font-family: var(--font-mono);">${currentRankDisplay}</span>
+                  ${!isCleanAccount && user.rankMovement ? `
+                    <span style="font-size: 12px; font-weight: 600; color: var(--success); display: inline-flex; align-items: center; gap: 2px;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                      ${user.rankMovement}
+                    </span>
+                  ` : `
+                    <span style="font-size: 11px; color: var(--text-muted);">(No verified XP)</span>
+                  `}
                 </div>
 
                 <div class="hero-scope-pills">
@@ -105,49 +113,56 @@ function renderOverviewDashboard() {
             <!-- Honest history sparkline / status -->
             <div class="hero-xp-right">
               <div class="sparkline-box">
-                <svg width="110" height="32" viewBox="0 0 110 32" fill="none">
-                  <path d="M2 28 L24 22 L46 25 L68 14 L90 17 L108 4" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <circle cx="108" cy="4" r="3" fill="#8B5CF6"/>
-                </svg>
-                <div style="display: flex; flex-direction: column; font-size: 10px; line-height: 1.3;">
-                  <span style="color: var(--text-secondary); font-weight: 600;">Last 7 Days</span>
-                  <span style="color: var(--success);">+180 XP Verified</span>
-                </div>
+                ${!isCleanAccount ? `
+                  <svg width="110" height="32" viewBox="0 0 110 32" fill="none">
+                    <path d="M2 28 L24 22 L46 25 L68 14 L90 17 L108 4" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="108" cy="4" r="3" fill="#8B5CF6"/>
+                  </svg>
+                  <div style="display: flex; flex-direction: column; font-size: 10px; line-height: 1.3;">
+                    <span style="color: var(--text-secondary); font-weight: 600;">Last 7 Days</span>
+                    <span style="color: var(--success);">+180 XP Verified</span>
+                  </div>
+                ` : `
+                  <div style="display: flex; flex-direction: column; font-size: 11px; line-height: 1.3; padding: 4px;">
+                    <span style="color: var(--text-muted); font-weight: 600;">Recent Progress</span>
+                    <span style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px; margin-top: 2px;">0 XP Earned</span>
+                  </div>
+                `}
               </div>
               <span style="font-size: 10.5px; color: var(--text-muted);">Self-study or course time never awards DSA XP</span>
             </div>
           </div>
         </div>
 
-        <!-- Metrics Grid (Cols 9-12) -->
+        <!-- Metrics Grid (Cols 9-12) (Rule 4: clean metrics for clean accounts) -->
         <div class="col-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
           <div class="metric-card">
             <span class="metric-label">Problems Solved</span>
-            <span class="metric-value">${user.solvedStats.total}</span>
+            <span class="metric-value">${isCleanAccount ? 0 : user.solvedStats.total}</span>
             <span class="metric-meta text-muted" style="font-size: 11px;">
-              <span style="color: var(--diff-easy); font-weight: 600;">${user.solvedStats.easy}E</span> • 
-              <span style="color: var(--diff-medium); font-weight: 600;">${user.solvedStats.medium}M</span> • 
-              <span style="color: var(--diff-hard); font-weight: 600;">${user.solvedStats.hard}H</span>
+              <span style="color: var(--diff-easy); font-weight: 600;">${isCleanAccount ? 0 : user.solvedStats.easy}E</span> • 
+              <span style="color: var(--diff-medium); font-weight: 600;">${isCleanAccount ? 0 : user.solvedStats.medium}M</span> • 
+              <span style="color: var(--diff-hard); font-weight: 600;">${isCleanAccount ? 0 : user.solvedStats.hard}H</span>
             </span>
           </div>
 
           <div class="metric-card">
             <span class="metric-label">Courses Completed</span>
-            <span class="metric-value">${user.coursesCompleted}</span>
+            <span class="metric-value">${isCleanAccount ? 0 : user.coursesCompleted}</span>
             <span class="metric-meta text-muted" style="font-size: 11px;">Final score ≥ 80%</span>
           </div>
 
           <div class="metric-card">
             <span class="metric-label">Overall Progress</span>
-            <span class="metric-value" style="color: var(--accent-cyan);">68%</span>
+            <span class="metric-value" style="color: var(--accent-cyan);">${isCleanAccount ? '0%' : '68%'}</span>
             <div class="progress-bar-track" style="margin-top: 4px;">
-              <div class="progress-bar-fill progress-bar-cyan" style="width: 68%;"></div>
+              <div class="progress-bar-fill progress-bar-cyan" style="width: ${isCleanAccount ? 0 : 68}%;"></div>
             </div>
           </div>
 
           <div class="metric-card">
             <span class="metric-label">Acceptance Rate</span>
-            <span class="metric-value">${user.acceptanceRate}</span>
+            <span class="metric-value">${isCleanAccount ? '—' : user.acceptanceRate}</span>
             <span class="metric-meta text-muted" style="font-size: 11px;">Judge confirmed</span>
           </div>
         </div>
@@ -251,34 +266,48 @@ function renderOverviewDashboard() {
               <button class="btn btn-ghost btn-sm" onclick="AriseState.setScreen('dsa-problems')">Browse All Solves →</button>
             </div>
 
-            <table class="arise-table" aria-label="Recently verified problems table">
-              <thead>
-                <tr>
-                  <th style="width: 110px;">Problem ID</th>
-                  <th>Title</th>
-                  <th style="width: 100px;">Difficulty</th>
-                  <th style="width: 110px;">Topic</th>
-                  <th style="width: 110px;">Solved Time</th>
-                  <th style="width: 80px; text-align: right;">XP</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${recentSolves.map(p => `
-                  <tr style="cursor: pointer;" onclick="openProblemWorkspace('${p.id}')">
-                    <td><span class="font-mono" style="font-size: 12px; color: #A78BFA; font-weight: 600;">${p.id}</span></td>
-                    <td style="font-weight: 500; color: var(--text-primary);">${p.title}</td>
-                    <td>
-                      <span class="badge badge-${p.difficulty.toLowerCase()}">
-                        ${p.difficulty === 'Easy' ? '●' : p.difficulty === 'Medium' ? '■' : '▲'} ${p.difficulty}
-                      </span>
-                    </td>
-                    <td><span class="topic-tag">${p.topic}</span></td>
-                    <td style="font-size: 12px; color: var(--text-muted);">${p.time}</td>
-                    <td style="text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--success);">+${p.xp}</td>
+            ${recentSolves.length > 0 ? `
+              <table class="arise-table" aria-label="Recently verified problems table">
+                <thead>
+                  <tr>
+                    <th style="width: 110px;">Problem ID</th>
+                    <th>Title</th>
+                    <th style="width: 100px;">Difficulty</th>
+                    <th style="width: 110px;">Topic</th>
+                    <th style="width: 110px;">Solved Time</th>
+                    <th style="width: 80px; text-align: right;">XP</th>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  ${recentSolves.map(p => `
+                    <tr style="cursor: pointer;" onclick="openProblemWorkspace('${p.id}')">
+                      <td><span class="font-mono" style="font-size: 12px; color: #A78BFA; font-weight: 600;">${p.id}</span></td>
+                      <td style="font-weight: 500; color: var(--text-primary);">${p.title}</td>
+                      <td>
+                        <span class="badge badge-${p.difficulty.toLowerCase()}">
+                          ${p.difficulty === 'Easy' ? '●' : p.difficulty === 'Medium' ? '■' : '▲'} ${p.difficulty}
+                        </span>
+                      </td>
+                      <td><span class="topic-tag">${p.topic}</span></td>
+                      <td style="font-size: 12px; color: var(--text-muted);">${p.time}</td>
+                      <td style="text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--success);">+${p.xp}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : `
+              <!-- Rule 4: Clean Empty State for New Account -->
+              <div style="padding: var(--space-8); text-align: center; color: var(--text-muted);">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid var(--border-default); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: var(--text-muted);">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                </div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No problems solved yet</div>
+                <p style="font-size: 12.5px; color: var(--text-secondary); max-width: 380px; margin: 0 auto 16px; line-height: 1.5;">
+                  Run code in the DSA sandbox to have solutions verified by the isolated judge engine and earn verified XP.
+                </p>
+                <button class="btn btn-primary btn-sm" onclick="AriseState.setScreen('dsa-problems')">Browse DSA Catalogue →</button>
+              </div>
+            `}
           </div>
         </div>
 
@@ -304,12 +333,12 @@ function renderOverviewDashboard() {
                 </div>
               `).join('')}
 
-              <!-- User Highlighted Row -->
+              <!-- User Highlighted Row (Rule 4: Shows Unranked & 0 XP for clean accounts) -->
               <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: var(--radius-sm); background: rgba(139,92,246,0.18); border: 1px solid rgba(139,92,246,0.4); margin-top: 4px; font-size: 12.5px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-family: var(--font-mono); font-weight: 700; width: 16px; color: #C4B5FD;">#${currentRank}</span>
+                  <span style="font-family: var(--font-mono); font-weight: 700; color: #C4B5FD;">${currentRankDisplay}</span>
                   <span style="color: #FFFFFF; font-weight: 600;">You</span>
-                  <span class="badge" style="font-size: 9px; padding: 1px 4px; background: rgba(139,92,246,0.3); color: #DDD6FE;">COEP</span>
+                  <span class="badge" style="font-size: 9px; padding: 1px 4px; background: rgba(139,92,246,0.3); color: #DDD6FE;">${user.college ? user.college.split(' ')[0] : 'STUDENT'}</span>
                 </div>
                 <span style="font-family: var(--font-mono); color: #FFFFFF; font-weight: 700; font-size: 12px;">${user.verifiedXp} XP</span>
               </div>
@@ -326,7 +355,7 @@ function renderOverviewDashboard() {
             </div>
 
             <div style="display: flex; flex-direction: column; gap: var(--space-2);">
-              ${earnedBadges.map(b => `
+              ${earnedBadges.length > 0 ? earnedBadges.map(b => `
                 <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.02);">
                   <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); display: flex; align-items: center; justify-content: center; color: #A78BFA; flex-shrink: 0;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
@@ -336,7 +365,13 @@ function renderOverviewDashboard() {
                     <span style="font-size: 10.5px; color: var(--text-muted);">Unlocked ${b.unlockedDate}</span>
                   </div>
                 </div>
-              `).join('')}
+              `).join('') : `
+                <!-- Rule 4: Clean Badge State -->
+                <div style="padding: 16px 10px; text-align: center; color: var(--text-muted); font-size: 12px; line-height: 1.5;">
+                  <div style="font-weight: 500; color: var(--text-secondary); margin-bottom: 2px;">No badges earned yet</div>
+                  Solve DSA problems to unlock milestone achievements.
+                </div>
+              `}
             </div>
           </div>
         </div>

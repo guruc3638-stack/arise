@@ -90,6 +90,13 @@ class ProfileService:
                 skills.extend(course.get("skills", []))
         profile["completed_skills"] = list(dict.fromkeys(skills))
 
+        if profile["verified_xp"] == 0:
+            profile["rank_state"] = None
+            profile["rank_college"] = None
+            profile["rank_district"] = None
+            profile["rank_india"] = None
+            profile["rank_display"] = "Unranked"
+
         return ProfileResponse(**profile)
 
     async def update_profile(self, user_id: str, updates: ProfileUpdate) -> ProfileResponse:

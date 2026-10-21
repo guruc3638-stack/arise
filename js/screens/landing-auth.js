@@ -127,7 +127,7 @@ function renderLandingPage() {
   `;
 }
 
-// SCREEN B: SIGN UP
+// SCREEN B: SIGN UP (Rule 1)
 function renderSignUpScreen() {
   return `
     <div class="auth-container">
@@ -135,35 +135,57 @@ function renderSignUpScreen() {
         <div style="text-align: center;">
           <div class="brand-icon-mark" style="margin: 0 auto 12px; width: 40px; height: 40px;">▲</div>
           <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF;">Join ARISE</h1>
-          <p class="text-small text-muted" style="margin-top: 4px;">A unique ARISE student ID will be created for you</p>
+          <p class="text-small text-muted" style="margin-top: 4px;">A unique, stable ARISE student ID will be created for you</p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <!-- Tab Switcher (One page with two tabs) -->
+        <div class="auth-tabs" style="display: flex; background: rgba(255,255,255,0.04); border-radius: var(--radius-md); padding: 4px; border: 1px solid var(--border-subtle);">
+          <button class="btn btn-ghost btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('login')">Log In</button>
+          <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('signup')">Sign Up</button>
+        </div>
+
+        <!-- Inline Error Banner -->
+        <div id="signup-error-box" class="alert-banner" style="display: none; padding: 10px 14px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #FCA5A5; font-size: 13px; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="signup-error-text"></span>
+        </div>
+
+        <form id="signup-form" onsubmit="event.preventDefault(); handleSignupSubmit();" style="display: flex; flex-direction: column; gap: var(--space-4);">
           <div class="input-group">
-            <label class="input-label">College Email Address</label>
-            <input type="email" class="input" placeholder="student@coep.ac.in" />
+            <label class="input-label" for="signup-email">College / University Email</label>
+            <input type="email" id="signup-email" class="input" placeholder="student@coep.ac.in" required autocomplete="email" />
           </div>
 
           <div class="input-group">
-            <label class="input-label">Password</label>
-            <input type="password" class="input" placeholder="••••••••••••" />
-            <span class="text-small text-muted">Minimum 8 characters with numbers and symbols</span>
+            <label class="input-label" for="signup-display-name">Display (Hunter) Name <span class="text-muted">(Optional)</span></label>
+            <input type="text" id="signup-display-name" class="input" placeholder="e.g. Rohan Deshmukh" autocomplete="name" />
           </div>
 
-          <button class="btn btn-primary btn-lg" style="width: 100%; justify-content: center;" onclick="AriseState.setScreen('verify-email')">
-            Create Account →
+          <div class="input-group">
+            <label class="input-label" for="signup-password">Password</label>
+            <input type="password" id="signup-password" class="input" placeholder="Min. 8 characters" required minlength="8" autocomplete="new-password" />
+            <span class="text-small text-muted">Minimum 8 characters</span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="signup-confirm-password">Confirm Password</label>
+            <input type="password" id="signup-confirm-password" class="input" placeholder="Re-enter password" required minlength="8" autocomplete="new-password" />
+          </div>
+
+          <button type="submit" id="signup-submit-btn" class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; margin-top: var(--space-2);">
+            <span id="signup-btn-text">Create Account →</span>
           </button>
-        </div>
+        </form>
 
         <div style="text-align: center; font-size: 13px; color: var(--text-secondary); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
-          Already have an account? <a href="#" onclick="AriseState.setScreen('login')">Log In</a>
+          Already have an account? <a href="#/login" onclick="event.preventDefault(); AriseAuth.navigateTo('login')">Log In</a>
         </div>
       </div>
     </div>
   `;
 }
 
-// SCREEN C: LOGIN
+// SCREEN C: LOGIN (Rule 1)
 function renderLoginScreen() {
   return `
     <div class="auth-container">
@@ -174,27 +196,39 @@ function renderLoginScreen() {
           <p class="text-small text-muted" style="margin-top: 4px;">Sign in to continue solving and rising</p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <!-- Tab Switcher (One page with two tabs) -->
+        <div class="auth-tabs" style="display: flex; background: rgba(255,255,255,0.04); border-radius: var(--radius-md); padding: 4px; border: 1px solid var(--border-subtle);">
+          <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('login')">Log In</button>
+          <button class="btn btn-ghost btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('signup')">Sign Up</button>
+        </div>
+
+        <!-- Inline Error Banner -->
+        <div id="login-error-box" class="alert-banner" style="display: none; padding: 10px 14px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #FCA5A5; font-size: 13px; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="login-error-text"></span>
+        </div>
+
+        <form id="login-form" onsubmit="event.preventDefault(); handleLoginSubmit();" style="display: flex; flex-direction: column; gap: var(--space-4);">
           <div class="input-group">
-            <label class="input-label">Email or ARISE ID</label>
-            <input type="text" class="input font-mono" placeholder="ARISE-7K2M9Q or email" value="rohan@coep.ac.in" />
+            <label class="input-label" for="login-email">Email Address</label>
+            <input type="email" id="login-email" class="input font-mono" placeholder="student@coep.ac.in" required autocomplete="email" />
           </div>
 
           <div class="input-group">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <label class="input-label">Password</label>
-              <a href="#" style="font-size: 12px;" onclick="showToast('Password reset link sent', 'info')">Forgot password?</a>
+              <label class="input-label" for="login-password">Password</label>
+              <a href="#" style="font-size: 12px; color: var(--accent-purple);" onclick="event.preventDefault(); showToast('Password reset link sent to registered email if it exists.', 'info');">Forgot password?</a>
             </div>
-            <input type="password" class="input" value="••••••••••••" />
+            <input type="password" id="login-password" class="input" placeholder="••••••••••••" required autocomplete="current-password" />
           </div>
 
-          <button class="btn btn-primary btn-lg" style="width: 100%; justify-content: center;" onclick="AriseState.setScreen('overview')">
-            Log In →
+          <button type="submit" id="login-submit-btn" class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; margin-top: var(--space-2);">
+            <span id="login-btn-text">Log In →</span>
           </button>
-        </div>
+        </form>
 
         <div style="text-align: center; font-size: 13px; color: var(--text-secondary); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
-          New student? <a href="#" onclick="AriseState.setScreen('signup')">Create an account</a>
+          New student? <a href="#/signup" onclick="event.preventDefault(); AriseAuth.navigateTo('signup')">Create an account</a>
         </div>
       </div>
     </div>
@@ -203,6 +237,7 @@ function renderLoginScreen() {
 
 // SCREEN D: EMAIL VERIFICATION
 function renderVerifyEmailScreen() {
+  const email = (ARISE_DATA.currentUser && ARISE_DATA.currentUser.email) || "your email";
   return `
     <div class="auth-container">
       <div class="auth-card" style="text-align: center;">
@@ -211,15 +246,15 @@ function renderVerifyEmailScreen() {
         </div>
         <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px;">Check Your Inbox</h1>
         <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-5);">
-          We sent a verification link to <b>student@coep.ac.in</b>. Please verify to activate your account.
+          A verification link has been sent to <b>${email}</b>. Click the link to complete verification.
         </p>
 
         <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-          <button class="btn btn-primary btn-lg" onclick="AriseState.setScreen('onboarding')">
-            Simulate Email Verified →
+          <button class="btn btn-primary btn-lg" onclick="AriseAuth.navigateTo('onboarding')">
+            Continue to Profile Setup →
           </button>
-          <button class="btn btn-ghost btn-sm" onclick="showToast('New verification code sent', 'info')">
-            Resend Email (cooldown 45s)
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Verification email resent', 'info')">
+            Resend Email
           </button>
         </div>
       </div>
@@ -227,14 +262,18 @@ function renderVerifyEmailScreen() {
   `;
 }
 
-// SCREEN E: STUDENT ONBOARDING (3 Steps Max with Generated UID Confirmation)
+// SCREEN E: STUDENT PROFILE SETUP (Rule 1 & Rule 4)
+// "After signup, send the user to the Profile setup screen (display name, college, district, visibility toggles)."
 function renderOnboardingScreen() {
+  const user = ARISE_DATA.currentUser;
+  const currentUid = user.uid && user.uid.startsWith("AR-") ? user.uid : "AR-XXXXXXXX";
+
   return `
     <div class="auth-container">
-      <div class="auth-card" style="max-width: 500px;">
-        <!-- Stepper: 3 steps max -->
+      <div class="auth-card" style="max-width: 520px;">
+        <!-- Stepper -->
         <div class="onboarding-stepper">
-          <div class="step-indicator completed">✓</div>
+          <div class="step-indicator completed" style="background: var(--success); color: #FFFFFF; border-color: var(--success);">✓</div>
           <div class="step-line" style="background: var(--success);"></div>
           <div class="step-indicator active">2</div>
           <div class="step-line"></div>
@@ -242,45 +281,223 @@ function renderOnboardingScreen() {
         </div>
 
         <div style="text-align: center; margin-bottom: var(--space-4);">
-          <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF;">Complete Student Profile</h1>
-          <p class="text-small text-muted" style="margin-top: 4px;">Step 2 of 3: Academic Information</p>
+          <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF;">Student Profile Setup</h1>
+          <p class="text-small text-muted" style="margin-top: 4px;">Configure your public identity and privacy toggles</p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <form id="onboarding-form" onsubmit="event.preventDefault(); handleProfileSetupSubmit();" style="display: flex; flex-direction: column; gap: var(--space-4);">
           <div class="input-group">
-            <label class="input-label">Display (Hunter) Name</label>
-            <input type="text" class="input" value="Rohan Deshmukh" />
+            <label class="input-label" for="setup-display-name">Display (Hunter) Name</label>
+            <input type="text" id="setup-display-name" class="input" value="${user.displayName && user.displayName !== 'Guest Learner' ? user.displayName : ''}" placeholder="e.g. Rohan Deshmukh" required minlength="2" maxlength="50" />
+            <span class="text-small text-muted">Shown on class leaderboards and submissions</span>
           </div>
 
           <div class="input-group">
-            <label class="input-label">College / Institute</label>
-            <input type="text" class="input" value="COEP Technological University, Pune" />
+            <label class="input-label" for="setup-college">College / Institute</label>
+            <input type="text" id="setup-college" class="input" placeholder="e.g. COEP Technological University, Pune" />
           </div>
 
           <div class="input-group">
-            <label class="input-label">District (Maharashtra)</label>
-            <input type="text" class="input" value="Pune" />
+            <label class="input-label" for="setup-district">District (Maharashtra)</label>
+            <input type="text" id="setup-district" class="input" placeholder="e.g. Pune, Mumbai, Kolhapur" />
           </div>
 
-          <!-- Generated UID preview confirmation (Strict rule: User never types it) -->
+          <!-- Server-Generated Unique UID (Rule 4 & 5: Read-only, client cannot type or edit it) -->
           <div style="padding: 14px; border-radius: var(--radius-md); background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.35); text-align: left;">
             <div style="font-size: 11px; text-transform: uppercase; color: #C4B5FD; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px;">
-              Your System-Generated ARISE ID
+              Your System-Generated ARISE UID (Immutable)
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span class="font-mono" style="font-size: 16px; font-weight: 700; color: #FFFFFF;">ARISE-7K2M9Q</span>
-              <button class="btn btn-secondary btn-sm" onclick="copyAriseUid('ARISE-7K2M9Q')">Copy</button>
+              <span class="font-mono" style="font-size: 16px; font-weight: 700; color: #FFFFFF;">${currentUid}</span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="copyAriseUid('${currentUid}')">Copy</button>
             </div>
             <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px;">
-              Generated automatically to ensure uniqueness. You will use this ID to connect with classmates on the Friends Leaderboard.
+              Server-generated to guarantee uniqueness. Classmates use this UID to add you to mutual friend leaderboards.
             </p>
           </div>
 
-          <button class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; margin-top: var(--space-2);" onclick="AriseState.setScreen('overview'); showToast('Welcome to ARISE! UID: ARISE-7K2M9Q', 'success');">
-            Finish Onboarding & Launch Dashboard →
+          <!-- Visibility Toggles (Rule 1) -->
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+              Leaderboard Privacy Controls
+            </div>
+
+            <label style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: #FFFFFF; cursor: pointer;">
+              <input type="checkbox" id="setup-show-rank" checked style="accent-color: var(--accent-purple); width: 16px; height: 16px;" />
+              <span>Show DSA rank on public leaderboards</span>
+            </label>
+
+            <label style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: #FFFFFF; cursor: pointer;">
+              <input type="checkbox" id="setup-show-progress" checked style="accent-color: var(--accent-purple); width: 16px; height: 16px;" />
+              <span>Show verified solved problems and attempt counts</span>
+            </label>
+          </div>
+
+          <button type="submit" id="onboarding-submit-btn" class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; margin-top: var(--space-2);">
+            Finish Setup & Launch Dashboard →
           </button>
-        </div>
+        </form>
       </div>
     </div>
   `;
+}
+
+// --------------------------------------------------------------------------
+// AUTHENTICATION EVENT HANDLERS (Rule 1, Rule 4, Rule 5)
+// --------------------------------------------------------------------------
+
+async function handleLoginSubmit() {
+  const emailInput = document.getElementById('login-email');
+  const passwordInput = document.getElementById('login-password');
+  const errorBox = document.getElementById('login-error-box');
+  const errorText = document.getElementById('login-error-text');
+  const submitBtn = document.getElementById('login-submit-btn');
+  const btnText = document.getElementById('login-btn-text');
+
+  if (errorBox) errorBox.style.display = 'none';
+
+  const email = emailInput ? emailInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value : '';
+
+  if (!email || !password) {
+    if (errorBox && errorText) {
+      errorText.textContent = "Please fill in all fields.";
+      errorBox.style.display = 'flex';
+    }
+    return;
+  }
+
+  // Loading state
+  if (submitBtn) submitBtn.disabled = true;
+  if (btnText) btnText.innerHTML = `<span class="loading-spinner"></span> Signing in...`;
+
+  try {
+    await AriseAuth.signIn(email, password);
+  } catch (err) {
+    // Show safe error message only (Never reveal whether email exists)
+    if (errorBox && errorText) {
+      errorText.textContent = err.message || "Invalid email or password.";
+      errorBox.style.display = 'flex';
+    }
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+    if (btnText) btnText.textContent = "Log In →";
+  }
+}
+
+async function handleSignupSubmit() {
+  const emailInput = document.getElementById('signup-email');
+  const nameInput = document.getElementById('signup-display-name');
+  const passwordInput = document.getElementById('signup-password');
+  const confirmInput = document.getElementById('signup-confirm-password');
+  const errorBox = document.getElementById('signup-error-box');
+  const errorText = document.getElementById('signup-error-text');
+  const submitBtn = document.getElementById('signup-submit-btn');
+  const btnText = document.getElementById('signup-btn-text');
+
+  if (errorBox) errorBox.style.display = 'none';
+
+  const email = emailInput ? emailInput.value.trim() : '';
+  const displayName = nameInput ? nameInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value : '';
+  const confirmPassword = confirmInput ? confirmInput.value : '';
+
+  // Client-side validation (Rule 1)
+  if (!email || !password || !confirmPassword) {
+    if (errorBox && errorText) {
+      errorText.textContent = "Please fill in all required fields.";
+      errorBox.style.display = 'flex';
+    }
+    return;
+  }
+
+  if (!AriseAuth.validateEmail(email)) {
+    if (errorBox && errorText) {
+      errorText.textContent = "Please enter a valid email address.";
+      errorBox.style.display = 'flex';
+    }
+    return;
+  }
+
+  if (password.length < 8) {
+    if (errorBox && errorText) {
+      errorText.textContent = "Password must be at least 8 characters long.";
+      errorBox.style.display = 'flex';
+    }
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    if (errorBox && errorText) {
+      errorText.textContent = "Passwords do not match. Please re-enter.";
+      errorBox.style.display = 'flex';
+    }
+    return;
+  }
+
+  // Loading state
+  if (submitBtn) submitBtn.disabled = true;
+  if (btnText) btnText.innerHTML = `<span class="loading-spinner"></span> Creating account...`;
+
+  try {
+    await AriseAuth.signUp(email, password, confirmPassword, displayName);
+  } catch (err) {
+    if (errorBox && errorText) {
+      errorText.textContent = err.message || "Could not complete signup. Please try again.";
+      errorBox.style.display = 'flex';
+    }
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+    if (btnText) btnText.textContent = "Create Account →";
+  }
+}
+
+async function handleProfileSetupSubmit() {
+  const nameInput = document.getElementById('setup-display-name');
+  const collegeInput = document.getElementById('setup-college');
+  const districtInput = document.getElementById('setup-district');
+  const showRankInput = document.getElementById('setup-show-rank');
+  const showProgressInput = document.getElementById('setup-show-progress');
+  const submitBtn = document.getElementById('onboarding-submit-btn');
+
+  const displayName = nameInput ? nameInput.value.trim() : '';
+  const collegeName = collegeInput ? collegeInput.value.trim() : '';
+  const districtName = districtInput ? districtInput.value.trim() : '';
+  const showDsaRank = showRankInput ? showRankInput.checked : true;
+  const showDsaProgress = showProgressInput ? showProgressInput.checked : true;
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Saving profile...";
+  }
+
+  try {
+    const patchPayload = {
+      display_name: displayName || undefined,
+      college_name: collegeName || undefined,
+      district_name: districtName || undefined,
+      show_dsa_rank: showDsaRank,
+      show_dsa_progress: showDsaProgress
+    };
+
+    const updatedProfile = await AriseState.apiRequest('/me', 'PATCH', patchPayload);
+    AriseAuth.applyCleanUserProfile(updatedProfile);
+
+    if (typeof showToast === 'function') {
+      showToast("Profile configured! Launching dashboard...", "success");
+    }
+
+    AriseAuth.navigateTo('overview');
+  } catch (err) {
+    if (typeof showToast === 'function') {
+      showToast(err.message || "Failed to update profile", "error");
+    }
+    // Proceed to dashboard on network error
+    AriseAuth.navigateTo('overview');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Finish Setup & Launch Dashboard →";
+    }
+  }
 }

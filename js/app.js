@@ -34,6 +34,13 @@ function renderCurrentAppView() {
   const isMarketingAuthScreen = ['landing', 'signup', 'login', 'verify-email', 'onboarding'].includes(AriseState.currentScreen);
   const isMobileViewport = AriseState.viewport === '390';
 
+  // Rule 2 & 3: Route Protection Guard
+  if (typeof AriseAuth !== 'undefined' && typeof AriseAuth.enforceRouteGuard === 'function') {
+    if (!AriseAuth.enforceRouteGuard()) {
+      return; // Route guard will redirect and re-render
+    }
+  }
+
   let bodyContentHtml = '';
 
   if (isDesignSystemMode) {
@@ -178,11 +185,15 @@ function renderSidebarNavigation() {
         `).join('')}
       </nav>
 
-      <!-- Sidebar Footer with Collapse Action -->
+      <!-- Sidebar Footer with Collapse Action and Logout -->
       <div class="sidebar-footer">
         <button class="collapse-btn" onclick="toggleSidebarCollapse()" title="Toggle Sidebar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
           <span class="nav-label">${isCollapsed ? '' : 'Collapse Rail'}</span>
+        </button>
+        <button class="collapse-btn logout-sidebar-btn" onclick="AriseAuth.signOut()" title="Sign Out" style="color: #F87171; margin-top: 6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span class="nav-label">${isCollapsed ? '' : 'Log Out'}</span>
         </button>
       </div>
     </aside>
@@ -200,8 +211,30 @@ function toggleSidebarCollapse() {
   AriseState.notify();
 }
 
+function toggleUserDropdown(e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('user-header-dropdown');
+  if (dropdown) {
+    const isShowing = dropdown.style.display === 'block';
+    dropdown.style.display = isShowing ? 'none' : 'block';
+  }
+}
+
+function closeUserDropdown() {
+  const dropdown = document.getElementById('user-header-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.user-menu-pill-wrapper')) {
+      closeUserDropdown();
+    }
+  });
+}
+
 // --------------------------------------------------------------------------
-// SLIM HEADER (Breadcrumb, Search with ⌘K, Notifications, Avatar with UID)
+// SLIM HEADER (Breadcrumb, Search with ⌘K, Notifications, Avatar with UID & Menu)
 // --------------------------------------------------------------------------
 function renderAppHeader() {
   const current = AriseState.currentScreen;
@@ -241,11 +274,34 @@ function renderAppHeader() {
           ${unreadCount > 0 ? '<span class="notification-unread-dot"></span>' : ''}
         </button>
 
-        <!-- User Profile Pill in Header -->
-        <div class="user-menu-pill" onclick="AriseState.setScreen('profile')">
-          <div class="user-avatar-mini">${user.avatar}</div>
-          <span class="user-name-mini">${user.displayName}</span>
-          <span class="font-mono" style="font-size: 11px; color: #A78BFA; padding-left: 2px;">${user.uid}</span>
+        <!-- User Profile Pill in Header with Dropdown (Rule 3) -->
+        <div class="user-menu-pill-wrapper" style="position: relative;">
+          <div class="user-menu-pill" onclick="toggleUserDropdown(event)" role="button" aria-haspopup="true" style="cursor: pointer;">
+            <div class="user-avatar-mini">${user.avatar || 'ST'}</div>
+            <span class="user-name-mini">${user.displayName}</span>
+            <span class="font-mono" style="font-size: 11px; color: #A78BFA; padding-left: 2px;">${user.uid}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 4px; opacity: 0.7;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+
+          <div id="user-header-dropdown" class="glass-card" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); width: 230px; border: 1px solid var(--border-default); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 8px; z-index: 1000; background: #0E1322;">
+            <div style="padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px;">
+              <div style="font-size: 13px; font-weight: 600; color: #FFFFFF;">${user.displayName}</div>
+              <div class="font-mono" style="font-size: 11px; color: #A78BFA; margin-top: 2px;">${user.uid}</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="AriseState.setScreen('profile'); closeUserDropdown();" style="width: 100%; justify-content: flex-start; gap: 8px; font-size: 13px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              Student Profile
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="AriseState.setScreen('settings'); closeUserDropdown();" style="width: 100%; justify-content: flex-start; gap: 8px; font-size: 13px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              Privacy & Settings
+            </button>
+            <div style="border-top: 1px solid var(--border-subtle); margin: 6px 0;"></div>
+            <button class="btn btn-ghost btn-sm" onclick="AriseAuth.signOut(); closeUserDropdown();" style="width: 100%; justify-content: flex-start; gap: 8px; font-size: 13px; color: #EF4444;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              Log Out
+            </button>
+          </div>
         </div>
       </div>
     </header>

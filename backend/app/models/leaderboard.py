@@ -29,6 +29,7 @@ class LeaderboardResponse(BaseModel):
 class UserRankResponse(BaseModel):
     scope: str
     rank: Optional[int] = None
+    rank_display: Optional[str] = "Unranked"
     rank_hidden: bool = False
     verified_xp: int
     total_participants: int

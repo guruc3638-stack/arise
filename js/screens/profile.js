@@ -15,16 +15,18 @@ function renderProfileScreen() {
 // SCREEN T: PROFILE AND PROGRESS
 function renderProfileView() {
   const user = ARISE_DATA.currentUser;
-  const completedCourses = ARISE_DATA.courses.filter(c => c.assessmentPassed);
-  const earnedBadges = ARISE_DATA.badges.filter(b => b.status === 'earned');
+  const isCleanAccount = (!user.verifiedXp || user.verifiedXp === 0);
+  const currentRankDisplay = (isCleanAccount || !user.rank || !user.rank.maharashtra) ? "Unranked" : `#${user.rank.maharashtra}`;
+  const completedCourses = isCleanAccount ? [] : ARISE_DATA.courses.filter(c => c.assessmentPassed);
+  const earnedBadges = isCleanAccount ? [] : ARISE_DATA.badges.filter(b => b.status === 'earned');
 
   return `
     <div style="display: flex; flex-direction: column; gap: var(--space-6);">
       <!-- Profile Header Card -->
       <div class="profile-header-card">
         <div style="display: flex; align-items: center; gap: var(--space-5);">
-          <div style="width: 72px; height: 72px; border-radius: 50%; background: ${user.avatarBg}; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; color: #FFFFFF; box-shadow: var(--shadow-glow);">
-            ${user.avatar}
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: ${user.avatarBg || 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)'}; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; color: #FFFFFF; box-shadow: var(--shadow-glow);">
+            ${user.avatar || 'ST'}
           </div>
           <div>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -32,10 +34,10 @@ function renderProfileView() {
               <span class="badge" style="background: rgba(139,92,246,0.2); color: #C4B5FD;">Verified Student</span>
             </div>
             <div style="font-size: 13.5px; color: var(--text-secondary); margin-top: 2px;">
-              ${user.college} • ${user.district}, ${user.state}
+              ${user.college} • ${user.district ? user.district + ', ' : ''}${user.state}
             </div>
 
-            <!-- Read-Only UID Chip with Copy Action -->
+            <!-- Read-Only UID Chip with Copy Action (Rule 4 & 5: Server-generated, immutable) -->
             <div style="margin-top: 8px;">
               <div class="uid-chip">
                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Unique ARISE ID</span>
@@ -73,8 +75,10 @@ function renderProfileView() {
         <div class="col-4">
           <div class="metric-card">
             <span class="metric-label">Overall State Rank</span>
-            <span class="metric-value font-mono" style="color: #FFFFFF;">#${user.rank.maharashtra}</span>
-            <span class="metric-meta" style="color: var(--success); font-size: 11px;">Rank ▲ +2 in Maharashtra</span>
+            <span class="metric-value font-mono" style="color: #FFFFFF;">${currentRankDisplay}</span>
+            <span class="metric-meta" style="color: ${isCleanAccount ? 'var(--text-muted)' : 'var(--success)'}; font-size: 11px;">
+              ${isCleanAccount ? 'Solve problems to qualify for state rank' : 'Rank ▲ in Maharashtra'}
+            </span>
           </div>
         </div>
 
@@ -101,24 +105,35 @@ function renderProfileView() {
           </button>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-          ${completedCourses.map(c => `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
-              <div>
-                <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">${c.title}</div>
-                <div style="display: flex; gap: 6px; margin-top: 4px;">
-                  ${c.skills.map(s => `<span class="topic-tag">${s}</span>`).join('')}
+        ${completedCourses.length > 0 ? `
+          <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+            ${completedCourses.map(c => `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
+                <div>
+                  <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">${c.title}</div>
+                  <div style="display: flex; gap: 6px; margin-top: 4px;">
+                    ${c.skills.map(s => `<span class="topic-tag">${s}</span>`).join('')}
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div class="badge" style="background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border);">
+                    Passed (${c.assessmentScore}%)
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Verified Certificate</div>
                 </div>
               </div>
-              <div style="text-align: right;">
-                <div class="badge" style="background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border);">
-                  Passed (${c.assessmentScore}%)
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Verified Certificate</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
+            `).join('')}
+          </div>
+        ` : `
+          <!-- Rule 4: Clean Courses Empty State -->
+          <div style="padding: var(--space-6); text-align: center; color: var(--text-muted);">
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No courses completed yet</div>
+            <p style="font-size: 12.5px; color: var(--text-secondary); max-width: 380px; margin: 0 auto 14px; line-height: 1.5;">
+              Score 80% or higher on comprehensive course assessments to earn verified credentials on your student record.
+            </p>
+            <button class="btn btn-primary btn-sm" onclick="AriseState.setScreen('learning-catalogue')">Explore Learning Tracks →</button>
+          </div>
+        `}
       </div>
 
       <!-- Earned Badges Showcase -->
@@ -133,19 +148,30 @@ function renderProfileView() {
           </button>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4);">
-          ${earnedBadges.map(b => `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
-              <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); display: flex; align-items: center; justify-content: center; color: #A78BFA; flex-shrink: 0;">
-                ★
+        ${earnedBadges.length > 0 ? `
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4);">
+            ${earnedBadges.map(b => `
+              <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); display: flex; align-items: center; justify-content: center; color: #A78BFA; flex-shrink: 0;">
+                  ★
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: var(--text-primary); font-size: 13.5px;">${b.name}</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Unlocked ${b.unlockedDate}</div>
+                </div>
               </div>
-              <div>
-                <div style="font-weight: 600; color: var(--text-primary); font-size: 13.5px;">${b.name}</div>
-                <div style="font-size: 11px; color: var(--text-muted);">Unlocked ${b.unlockedDate}</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
+            `).join('')}
+          </div>
+        ` : `
+          <!-- Rule 4: Clean Badges Empty State -->
+          <div style="padding: var(--space-6); text-align: center; color: var(--text-muted);">
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No milestone badges unlocked</div>
+            <p style="font-size: 12.5px; color: var(--text-secondary); max-width: 380px; margin: 0 auto 14px; line-height: 1.5;">
+              Badges are awarded automatically as you solve problems and build your streak in the sandbox.
+            </p>
+            <button class="btn btn-secondary btn-sm" onclick="AriseState.setScreen('dsa-problems')">Start Practicing →</button>
+          </div>
+        `}
       </div>
     </div>
   `;

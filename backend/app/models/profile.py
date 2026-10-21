@@ -42,6 +42,7 @@ class ProfileResponse(ProfileBase):
     rank_district: Optional[int] = None
     rank_state: Optional[int] = None
     rank_india: Optional[int] = None
+    rank_display: Optional[str] = "Unranked"
     completed_courses_count: int = 0
     completed_skills: list[str] = []
     created_at: datetime
