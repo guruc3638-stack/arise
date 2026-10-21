@@ -476,9 +476,17 @@ const AriseAuth = {
   }
 };
 
+if (typeof window !== 'undefined') {
+  window.AriseAuth = AriseAuth;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = AriseAuth;
+}
+
 // Initialize auth module on load
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     AriseAuth.init();
   });
 }
+
