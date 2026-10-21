@@ -30,17 +30,21 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID"],
+    expose_headers=["X-Request-ID", "X-Content-Type-Options", "X-Frame-Options"],
 )
 
 
-# Request ID Middleware
+# Security and Request ID Middleware
 @app.middleware("http")
-async def request_id_middleware(request: Request, call_next):
+async def security_and_request_id_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     request.state.request_id = request_id
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
 
