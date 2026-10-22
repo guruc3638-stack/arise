@@ -11,6 +11,7 @@ class StudyFileResponse(BaseModel):
     size_bytes: int
     storage_key: str
     created_at: datetime
+    page_count: Optional[int] = 16
 
 
 class StudySessionStartRequest(BaseModel):

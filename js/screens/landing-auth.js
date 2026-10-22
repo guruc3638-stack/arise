@@ -18,11 +18,13 @@ function renderMarketingAndAuthScreen() {
 
 // SCREEN A: LANDING PAGE
 function renderLandingPage() {
+  const isLight = (typeof AriseTheme !== 'undefined' && AriseTheme.current === 'light');
+
   return `
     <div class="landing-page">
-      <!-- Landing Navigation -->
+      <!-- Top Navigation Bar -->
       <header class="landing-nav">
-        <div class="brand-link" onclick="AriseState.setScreen('landing')">
+        <div class="brand-link" onclick="AriseAuth.navigateTo('landing')" style="cursor: pointer;">
           <div class="brand-icon-mark">▲</div>
           <div class="brand-text-block">
             <span class="brand-name">ARISE</span>
@@ -30,97 +32,289 @@ function renderLandingPage() {
           </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: var(--space-4);">
-          <button class="btn btn-ghost" onclick="AriseState.setScreen('login')">Log In</button>
-          <button class="btn btn-primary" onclick="AriseState.setScreen('signup')">Get Started Free →</button>
+        <nav class="landing-nav-links">
+          <a href="#features-section" class="landing-nav-link" onclick="event.preventDefault(); document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' });">Pillars</a>
+          <a href="#tracks-section" class="landing-nav-link" onclick="event.preventDefault(); document.getElementById('tracks-section')?.scrollIntoView({ behavior: 'smooth' });">Curricula</a>
+          <a href="#judge-section" class="landing-nav-link" onclick="event.preventDefault(); document.getElementById('judge-section')?.scrollIntoView({ behavior: 'smooth' });">AI Judge</a>
+          <a href="#leaderboard-section" class="landing-nav-link" onclick="event.preventDefault(); document.getElementById('leaderboard-section')?.scrollIntoView({ behavior: 'smooth' });">Rankings</a>
+        </nav>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <!-- Day / Night Mode Toggle -->
+          <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode" aria-label="Toggle Night/Day theme">
+            ${isLight ? `
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6366F1;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              <span>Night</span>
+            ` : `
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FBBF24;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              <span>Day</span>
+            `}
+          </button>
+
+          <!-- Explicit Login and Register Options -->
+          <button class="btn btn-ghost btn-sm" onclick="AriseAuth.navigateTo('login')" title="Log In to your student account">
+            Log In
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="AriseAuth.navigateTo('signup')" title="Register a free student account">
+            Register Free →
+          </button>
         </div>
       </header>
 
       <!-- Hero Section -->
       <section class="landing-hero">
         <div class="hero-pill-badge">
-          <span>● Engineering & College Student Learning Platform</span>
+          <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #34D399; box-shadow: 0 0 8px #34D399;"></span>
+          <span>v2.0 • Computer Science & Competitive Programming Ecosystem</span>
         </div>
 
         <h1 class="hero-title">
-          Learn the principles.<br/>Solve the problems. Rise.
+          Where Serious Engineers Rise.
         </h1>
 
         <p class="hero-subtitle">
-          The premier computer science and competitive programming ecosystem engineered for students. Verified DSA XP, zero fake gamification, and honest proof of mastery.
+          The premier platform engineered for computer science students. Master algorithms, verify code through our server-isolated AI judge, and climb authentic collegiate leaderboards. Zero fake XP, 100% proof of mastery.
         </p>
 
+        <!-- Primary Dual CTAs: Register and Login -->
         <div class="hero-cta-group">
-          <button class="btn btn-primary btn-lg" onclick="AriseState.setScreen('signup')">
-            Create Free Student Account →
+          <button class="btn btn-primary btn-lg" onclick="AriseAuth.navigateTo('signup')" style="box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45); font-weight: 700;">
+            Register Student Account Free →
           </button>
-          <button class="btn btn-secondary btn-lg" onclick="AriseState.setScreen('overview')">
-            Explore Live Dashboard Preview
+          <button class="btn btn-secondary btn-lg" onclick="AriseAuth.navigateTo('login')">
+            Sign In to Account
           </button>
         </div>
 
-        <!-- Product Preview Window (Art-directed preview) -->
-        <div class="landing-preview-window">
+        <!-- Language Pill Strip -->
+        <div class="landing-lang-badges">
+          <span class="lang-pill"><span class="lang-dot" style="background: #3B82F6;"></span> Python 3</span>
+          <span class="lang-pill"><span class="lang-dot" style="background: #EC4899;"></span> C++ 20</span>
+          <span class="lang-pill"><span class="lang-dot" style="background: #EAB308;"></span> Java 17</span>
+          <span class="lang-pill"><span class="lang-dot" style="background: #06B6D4;"></span> C (C17)</span>
+          <span class="lang-pill"><span class="lang-dot" style="background: #14B8A6;"></span> Go 1.22</span>
+          <span class="lang-pill"><span class="lang-dot" style="background: #F97316;"></span> Rust 2021</span>
+          <span class="lang-pill"><span class="lang-dot" style="background: #A855F7;"></span> Node.js</span>
+        </div>
+
+        <!-- Live Platform Preview Window -->
+        <div class="landing-preview-window" id="judge-section">
           <div class="preview-window-bar">
             <div class="window-dots">
-              <div class="window-dot"></div>
-              <div class="window-dot"></div>
-              <div class="window-dot"></div>
+              <div class="window-dot" style="background: #EF4444;"></div>
+              <div class="window-dot" style="background: #F59E0B;"></div>
+              <div class="window-dot" style="background: #10B981;"></div>
             </div>
-            <span style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">arise.platform/app/overview • 1440px Desktop</span>
+            <span style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">arise.platform/workspace/001 • Server-Isolated Judge & Gemini AI</span>
           </div>
-          <div style="padding: 24px; background: #080B14; text-align: left;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-default); padding-bottom: 16px; margin-bottom: 20px;">
+
+          <div style="padding: 24px; text-align: left; display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-default); padding-bottom: 14px; flex-wrap: wrap; gap: 10px;">
               <div>
-                <div style="font-size: 12px; color: #C4B5FD; font-weight: 600;">ACTIVE STUDENT SESSION</div>
-                <div style="font-size: 20px; font-weight: 700; color: #FFFFFF;">Rohan Deshmukh • COEP Tech University</div>
+                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #C4B5FD; letter-spacing: 0.06em;">Verified Student Session</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
+                  Aditi Kulkarni <span style="font-size: 13px; font-weight: 400; color: var(--text-muted); padding-left: 6px;">• PICT Pune</span>
+                </div>
               </div>
-              <div class="uid-chip"><span class="uid-val">ARISE-7K2M9Q</span></div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="uid-chip"><span class="uid-val">AR-STUDENT99</span></div>
+                <span class="badge badge-easy">● Easy</span>
+              </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
-              <div class="metric-card"><span class="metric-label">Verified XP</span><span class="metric-value">3,420 XP</span></div>
-              <div class="metric-card"><span class="metric-label">State Rank</span><span class="metric-value font-mono">#14</span></div>
-              <div class="metric-card"><span class="metric-label">Problems Solved</span><span class="metric-value">48 Solved</span></div>
-              <div class="metric-card"><span class="metric-label">Courses Completed</span><span class="metric-value">2 Track</span></div>
+
+            <!-- Key metrics in preview -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+              <div class="metric-card" style="padding: 12px 14px;">
+                <span class="metric-label" style="font-size: 11px;">Verified XP</span>
+                <span class="metric-value font-mono" style="font-size: 18px; color: var(--success);">3,420 XP</span>
+              </div>
+              <div class="metric-card" style="padding: 12px 14px;">
+                <span class="metric-label" style="font-size: 11px;">State Rank</span>
+                <span class="metric-value font-mono" style="font-size: 18px; color: #FBBF24;">#14</span>
+              </div>
+              <div class="metric-card" style="padding: 12px 14px;">
+                <span class="metric-label" style="font-size: 11px;">Problems Solved</span>
+                <span class="metric-value font-mono" style="font-size: 18px;">48 Solved</span>
+              </div>
+              <div class="metric-card" style="padding: 12px 14px;">
+                <span class="metric-label" style="font-size: 11px;">Curricula Completed</span>
+                <span class="metric-value font-mono" style="font-size: 18px; color: #C4B5FD;">2 Tracks</span>
+              </div>
+            </div>
+
+            <!-- Code Sandbox Result Pill -->
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="font-mono" style="font-size: 12px; font-weight: 600; color: #A78BFA;">Problem 001: Two Sum</span>
+                  <span class="badge" style="background: rgba(52, 211, 153, 0.15); color: #34D399; border: 1px solid rgba(52, 211, 153, 0.3); font-size: 11px;">✓ ACCEPTED</span>
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
+                  3/3 Test Cases • 38ms • 14.2 MB
+                </div>
+              </div>
+              <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; font-family: var(--font-mono); background: rgba(255,255,255,0.02); padding: 8px 10px; border-radius: 6px; border-left: 3px solid #34D399;">
+                <span style="color: var(--success); font-weight: 600;">+50 Verified XP Awarded</span> • Verified by server-isolated AST sandbox & Gemini AI unit tests
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Three Core Pillars -->
-      <div class="preview-pillars-grid">
-        <div class="pillar-card">
-          <div style="font-size: 24px; color: #A78BFA;">01</div>
-          <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF;">Verified Submissions Only</h3>
-          <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
-            Every point of XP is verified by an isolated sandbox judge engine. Reading notes, watching videos, or fake clicks never award DSA rank.
+      <!-- 4 Core Pillars Section -->
+      <section class="landing-section" id="features-section">
+        <div class="landing-section-header">
+          <span class="hero-pill-badge" style="font-size: 11px;">FOUNDATIONAL PILLARS</span>
+          <h2 style="font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin-top: 8px;">
+            Engineering Rigor. Zero Fake Gamification.
+          </h2>
+          <p style="font-size: 15px; color: var(--text-secondary); max-width: 600px; margin: 8px auto 0;">
+            Built for serious computer science students who demand authentic verification rather than superficial click counters.
           </p>
         </div>
 
-        <div class="pillar-card">
-          <div style="font-size: 24px; color: #22D3EE;">02</div>
-          <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF;">System-Generated UID & Privacy</h3>
-          <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
-            Every student receives a cryptographic UID like <code style="color: #A78BFA; font-family: var(--font-mono);">ARISE-7K2M9Q</code>. Mutual consent is strictly enforced for friend leaderboards.
-          </p>
+        <div class="preview-pillars-grid">
+          <div class="pillar-card">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 26px;">⚡</div>
+              <div style="font-size: 12px; font-family: var(--font-mono); color: #A78BFA; font-weight: 700;">01 / JUDGE</div>
+            </div>
+            <h3 style="font-size: 17.5px; font-weight: 700; color: var(--text-primary); margin-top: 6px;">Sandboxed Judge Engine</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
+              Execute code in 7 programming languages against strict hidden test matrices, memory bounds, and timeouts. Powered by Google Gemini AI for smart error diagnostics.
+            </p>
+          </div>
+
+          <div class="pillar-card" id="tracks-section">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 26px;">📚</div>
+              <div style="font-size: 12px; font-family: var(--font-mono); color: #22D3EE; font-weight: 700;">02 / TRACKS</div>
+            </div>
+            <h3 style="font-size: 17.5px; font-weight: 700; color: var(--text-primary); margin-top: 6px;">16-Page CS Curricula</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
+              6 university-grade syllabi covering Data Structures, Graphs, Dynamic Programming, System Design, OS, and Cryptography. Verifiable certificate requires ≥ 80% on final exams.
+            </p>
+          </div>
+
+          <div class="pillar-card" id="leaderboard-section">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 26px;">🏆</div>
+              <div style="font-size: 12px; font-family: var(--font-mono); color: #34D399; font-weight: 700;">03 / RANKINGS</div>
+            </div>
+            <h3 style="font-size: 17.5px; font-weight: 700; color: var(--text-primary); margin-top: 6px;">Proof-of-Mastery Leaderboard</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
+              Every point of XP is verified from judge executions. No fake XP for reading or clicking. State, college, and district rankings with cryptographic student UID privacy.
+            </p>
+          </div>
+
+          <div class="pillar-card" id="self-study-section">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 26px;">📖</div>
+              <div style="font-size: 12px; font-family: var(--font-mono); color: #FBBF24; font-weight: 700;">04 / FOCUS</div>
+            </div>
+            <h3 style="font-size: 17.5px; font-weight: 700; color: var(--text-primary); margin-top: 6px;">Distraction-Free Self Study</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
+              Private academic PDF reader with bookmarking, multi-page jump navigation, and integrated focus timer. Study sessions award 0 XP to preserve competitive integrity.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Platform Stats Strip -->
+      <section class="landing-stats-banner">
+        <div class="landing-stats-container">
+          <div class="stat-item">
+            <div class="stat-number">500+</div>
+            <div class="stat-label">Verified DSA Problems</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Programming Languages</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">6</div>
+            <div class="stat-label">16-Page CS Curricula</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">≥ 80%</div>
+            <div class="stat-label">Rigorous Final Pass Mark</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section class="landing-section">
+        <div class="landing-section-header">
+          <span class="hero-pill-badge" style="font-size: 11px;">WORKFLOW</span>
+          <h2 style="font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin-top: 8px;">
+            Three Steps to Verifiable Proof
+          </h2>
         </div>
 
-        <div class="pillar-card">
-          <div style="font-size: 24px; color: #34D399;">03</div>
-          <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF;">Rigorous 80% Passing Cutoff</h3>
-          <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
-            Courses are complete only when passing the comprehensive final assessment with 80% or higher. 79% remains incomplete until mastery is demonstrated.
-          </p>
+        <div class="landing-steps-grid">
+          <div class="step-card">
+            <div class="step-badge">1</div>
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 6px;">Choose Your Track or Problem</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+              Select from 6 in-depth CS curricula or 500+ LeetCode problems filtered by topic (Arrays, Graphs, DP) and difficulty.
+            </p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-badge">2</div>
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 6px;">Code & Test Against Sandboxed Judge</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+              Write code in Python, C++, Java, C, Go, Rust, or JavaScript. Test against edge cases with instant Gemini AI diagnosis.
+            </p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-badge">3</div>
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 6px;">Earn Real XP & Rise on Leaderboards</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+              Submit your solution. Verified XP is written to your immutable ledger, advancing your college and district standings.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Bottom Call to Action Banner -->
+      <section class="landing-cta-banner">
+        <div style="max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+          <h2 style="font-size: 34px; font-weight: 800; letter-spacing: -0.02em;">
+            Ready to Prove Real Mastery?
+          </h2>
+          <p style="font-size: 15px; color: var(--text-secondary); line-height: 1.6;">
+            Join engineering students mastering data structures, algorithms, and systems with honest verification.
+          </p>
+          <div style="display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn btn-primary btn-lg" onclick="AriseAuth.navigateTo('signup')">
+              Register Student Account (Free) →
+            </button>
+            <button class="btn btn-secondary btn-lg" onclick="AriseAuth.navigateTo('login')">
+              Sign In to Account
+            </button>
+          </div>
+        </div>
+      </section>
 
       <!-- Landing Footer -->
-      <footer style="margin-top: auto; border-top: 1px solid var(--border-default); padding: 32px var(--space-8); display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); background: #060910;">
-        <div>© 2026 ARISE Learning Systems Inc. Designed for engineering students in India.</div>
-        <div style="display: flex; gap: var(--space-4);">
-          <a href="#" style="color: var(--text-muted);">Terms of Service</a>
-          <a href="#" style="color: var(--text-muted);">Privacy Policy</a>
-          <a href="#" style="color: var(--text-muted);">Backend Verification Rules</a>
+      <footer class="landing-footer">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div class="brand-link" onclick="AriseAuth.navigateTo('landing')" style="cursor: pointer;">
+            <div class="brand-icon-mark" style="width: 24px; height: 24px; font-size: 12px;">▲</div>
+            <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);">ARISE</span>
+          </div>
+          <span>•</span>
+          <span>© 2026 ARISE Learning Systems Inc. Designed for engineering students.</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode" style="padding: 4px 10px; font-size: 11.5px;">
+            ${isLight ? '🌙 Night Mode' : '☀️ Day Mode'}
+          </button>
+          <a href="#/login" onclick="event.preventDefault(); AriseAuth.navigateTo('login')" style="color: var(--text-muted); font-size: 12px;">Log In</a>
+          <a href="#/signup" onclick="event.preventDefault(); AriseAuth.navigateTo('signup')" style="color: var(--text-muted); font-size: 12px;">Register</a>
         </div>
       </footer>
     </div>
@@ -129,19 +323,30 @@ function renderLandingPage() {
 
 // SCREEN B: SIGN UP (Rule 1)
 function renderSignUpScreen() {
+  const isLight = (typeof AriseTheme !== 'undefined' && AriseTheme.current === 'light');
+
   return `
     <div class="auth-container">
+      <div style="position: absolute; top: 20px; left: 24px; right: 24px; display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-ghost btn-sm" onclick="AriseAuth.navigateTo('landing')" style="gap: 6px;">
+          ← Back to Home
+        </button>
+        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode">
+          ${isLight ? '🌙 Night' : '☀️ Day'}
+        </button>
+      </div>
+
       <div class="auth-card">
         <div style="text-align: center;">
-          <div class="brand-icon-mark" style="margin: 0 auto 12px; width: 40px; height: 40px;">▲</div>
-          <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF;">Join ARISE</h1>
+          <div class="brand-icon-mark" style="margin: 0 auto 12px; width: 40px; height: 40px; cursor: pointer;" onclick="AriseAuth.navigateTo('landing')">▲</div>
+          <h1 style="font-size: 22px; font-weight: 700; color: var(--text-primary);">Join ARISE</h1>
           <p class="text-small text-muted" style="margin-top: 4px;">A unique, stable ARISE student ID will be created for you</p>
         </div>
 
         <!-- Tab Switcher (One page with two tabs) -->
         <div class="auth-tabs" style="display: flex; background: rgba(255,255,255,0.04); border-radius: var(--radius-md); padding: 4px; border: 1px solid var(--border-subtle);">
           <button class="btn btn-ghost btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('login')">Log In</button>
-          <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('signup')">Sign Up</button>
+          <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('signup')">Register</button>
         </div>
 
         <!-- Inline Error Banner -->
@@ -173,7 +378,7 @@ function renderSignUpScreen() {
           </div>
 
           <button type="submit" id="signup-submit-btn" class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; margin-top: var(--space-2);">
-            <span id="signup-btn-text">Create Account →</span>
+            <span id="signup-btn-text">Register Account →</span>
           </button>
         </form>
 
@@ -187,19 +392,30 @@ function renderSignUpScreen() {
 
 // SCREEN C: LOGIN (Rule 1)
 function renderLoginScreen() {
+  const isLight = (typeof AriseTheme !== 'undefined' && AriseTheme.current === 'light');
+
   return `
     <div class="auth-container">
+      <div style="position: absolute; top: 20px; left: 24px; right: 24px; display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-ghost btn-sm" onclick="AriseAuth.navigateTo('landing')" style="gap: 6px;">
+          ← Back to Home
+        </button>
+        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode">
+          ${isLight ? '🌙 Night' : '☀️ Day'}
+        </button>
+      </div>
+
       <div class="auth-card">
         <div style="text-align: center;">
-          <div class="brand-icon-mark" style="margin: 0 auto 12px; width: 40px; height: 40px;">▲</div>
-          <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF;">Welcome to ARISE</h1>
+          <div class="brand-icon-mark" style="margin: 0 auto 12px; width: 40px; height: 40px; cursor: pointer;" onclick="AriseAuth.navigateTo('landing')">▲</div>
+          <h1 style="font-size: 22px; font-weight: 700; color: var(--text-primary);">Welcome to ARISE</h1>
           <p class="text-small text-muted" style="margin-top: 4px;">Sign in to continue solving and rising</p>
         </div>
 
         <!-- Tab Switcher (One page with two tabs) -->
         <div class="auth-tabs" style="display: flex; background: rgba(255,255,255,0.04); border-radius: var(--radius-md); padding: 4px; border: 1px solid var(--border-subtle);">
           <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('login')">Log In</button>
-          <button class="btn btn-ghost btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('signup')">Sign Up</button>
+          <button class="btn btn-ghost btn-sm" style="flex: 1; justify-content: center;" onclick="AriseAuth.navigateTo('signup')">Register</button>
         </div>
 
         <!-- Inline Error Banner -->
@@ -228,7 +444,7 @@ function renderLoginScreen() {
         </form>
 
         <div style="text-align: center; font-size: 13px; color: var(--text-secondary); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
-          New student? <a href="#/signup" onclick="event.preventDefault(); AriseAuth.navigateTo('signup')">Create an account</a>
+          New student? <a href="#/signup" onclick="event.preventDefault(); AriseAuth.navigateTo('signup')">Register an account</a>
         </div>
       </div>
     </div>

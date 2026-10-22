@@ -51,6 +51,9 @@ function renderCurrentAppView() {
     // Standard Authenticated App Screen
     bodyContentHtml = `
       <div class="app-container">
+        <!-- Mobile Sidebar Backdrop -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
+
         <!-- Exact Sidebar Navigation Order -->
         ${renderSidebarNavigation()}
 
@@ -179,7 +182,7 @@ function renderSidebarNavigation() {
   return `
     <aside class="sidebar ${isCollapsed ? 'collapsed' : ''}" aria-label="Main Navigation">
       <div class="sidebar-header">
-        <div class="brand-link" onclick="AriseState.setScreen('overview')" style="cursor: pointer;">
+        <div class="brand-link" onclick="closeMobileSidebar(); AriseState.setScreen('overview')" style="cursor: pointer;">
           <div class="brand-icon-mark">▲</div>
           <div class="brand-text-block">
             <span class="brand-name">ARISE</span>
@@ -201,13 +204,22 @@ function renderSidebarNavigation() {
         `).join('')}
       </nav>
 
-      <!-- Sidebar Footer with Collapse Action and Logout -->
+      <!-- Sidebar Footer with Theme, Collapse Action and Logout -->
       <div class="sidebar-footer">
+        <button class="collapse-btn theme-toggle-sidebar-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode">
+          ${(typeof AriseTheme !== 'undefined' && AriseTheme.current === 'light') ? `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6366F1;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <span class="nav-label">${isCollapsed ? '' : 'Night Mode'}</span>
+          ` : `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FBBF24;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <span class="nav-label">${isCollapsed ? '' : 'Day Mode'}</span>
+          `}
+        </button>
         <button class="collapse-btn" onclick="toggleSidebarCollapse()" title="Toggle Sidebar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
           <span class="nav-label">${isCollapsed ? '' : 'Collapse Rail'}</span>
         </button>
-        <button class="collapse-btn logout-sidebar-btn" onclick="AriseAuth.signOut()" title="Sign Out" style="color: #F87171; margin-top: 6px;">
+        <button class="collapse-btn logout-sidebar-btn" onclick="closeMobileSidebar(); AriseAuth.signOut();" title="Sign Out">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
           <span class="nav-label">${isCollapsed ? '' : 'Log Out'}</span>
         </button>
@@ -216,7 +228,30 @@ function renderSidebarNavigation() {
   `;
 }
 
+function toggleMobileSidebar(forceState) {
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar) return;
+
+  const willOpen = (typeof forceState === 'boolean')
+    ? forceState
+    : !sidebar.classList.contains('mobile-open');
+
+  if (willOpen) {
+    sidebar.classList.add('mobile-open');
+    if (backdrop) backdrop.classList.add('open');
+  } else {
+    sidebar.classList.remove('mobile-open');
+    if (backdrop) backdrop.classList.remove('open');
+  }
+}
+
+function closeMobileSidebar() {
+  toggleMobileSidebar(false);
+}
+
 function handleNavClick(navId) {
+  closeMobileSidebar();
   if (navId === 'dsa') AriseState.setScreen('dsa-problems');
   else if (navId === 'learning') AriseState.setScreen('learning-catalogue');
   else AriseState.setScreen(navId);
@@ -267,6 +302,11 @@ function renderAppHeader() {
   return `
     <header class="header">
       <div class="header-left">
+        <!-- Mobile hamburger toggle button (visible <= 768px) -->
+        <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Toggle navigation menu" title="Open Navigation">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+
         <div class="header-breadcrumb">
           <span class="breadcrumb-root">ARISE</span>
           <span class="breadcrumb-sep">/</span>
@@ -284,6 +324,17 @@ function renderAppHeader() {
       </div>
 
       <div class="header-right">
+        <!-- Day / Night Mode Toggle -->
+        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode" aria-label="Toggle theme">
+          ${(typeof AriseTheme !== 'undefined' && AriseTheme.current === 'light') ? `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6366F1;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <span>Night</span>
+          ` : `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FBBF24;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <span>Day</span>
+          `}
+        </button>
+
         <!-- Notification Bell Icon with Unread Badge -->
         <button class="notification-bell-btn" onclick="toggleNotificationsDrawer()" aria-label="View notifications">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>

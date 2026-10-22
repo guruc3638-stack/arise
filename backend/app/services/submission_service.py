@@ -77,7 +77,9 @@ class SubmissionService:
             problem_id=problem["id"],
             language=request.language,
             source_code=request.source_code,
-            hidden_test_cases=hidden_cases
+            hidden_test_cases=hidden_cases,
+            problem_dict=problem,
+            gemini_api_key=request.gemini_api_key
         )
 
         verdict = judge_res["verdict"]

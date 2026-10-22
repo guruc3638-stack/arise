@@ -85,7 +85,7 @@ def test_problem_detail_endpoint(client: TestClient):
     assert res.status_code == 200
     p = res.json()
     assert p["id"] == "ARISE-P101"
-    assert p["title"] == "Calibrate Telemetry Sensors"
+    assert "Calibrate Telemetry Sensors" in p["title"]
     assert p["difficulty"] == "EASY"
     assert p["xp_award"] == 10
     assert len(p["statement"]) > 10

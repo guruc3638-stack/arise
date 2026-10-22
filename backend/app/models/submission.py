@@ -19,6 +19,7 @@ class SubmissionCreateRequest(BaseModel):
     language: str = Field(..., description="Language: python, javascript, cpp, java")
     source_code: str = Field(..., min_length=1, description="Student solution source code")
     idempotency_key: Optional[str] = Field(None, description="Client idempotency key for retry deduplication")
+    gemini_api_key: Optional[str] = Field(None, description="Optional Google Gemini API key for AI code evaluation")
 
     # Tamper fields to test T-05 and T-06 (These MUST be ignored by the backend)
     xp_amount: Optional[int] = None

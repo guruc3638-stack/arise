@@ -1,16 +1,58 @@
 /* ==========================================================================
-   ARISE APPLICATION STATE
+   ARISE APPLICATION STATE & THEME CONTROLLER
    ========================================================================== */
+
+const AriseTheme = {
+  current: 'dark',
+
+  init() {
+    try {
+      const saved = localStorage.getItem('arise_theme');
+      if (saved === 'light' || saved === 'dark') {
+        this.current = saved;
+      }
+    } catch (e) {}
+    this.apply();
+  },
+
+  toggle() {
+    this.current = (this.current === 'dark') ? 'light' : 'dark';
+    try {
+      localStorage.setItem('arise_theme', this.current);
+    } catch (e) {}
+    this.apply();
+    if (typeof showToast === 'function') {
+      showToast(`${this.current === 'dark' ? '🌙 Night mode' : '☀️ Day mode'} activated`, 'info');
+    }
+    if (typeof AriseState !== 'undefined' && typeof AriseState.notify === 'function') {
+      AriseState.notify();
+    }
+  },
+
+  apply() {
+    if (typeof document !== 'undefined' && document.documentElement && typeof document.documentElement.setAttribute === 'function') {
+      document.documentElement.setAttribute('data-theme', this.current);
+      if (document.body && typeof document.body.setAttribute === 'function') {
+        document.body.setAttribute('data-theme', this.current);
+      }
+    }
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.AriseTheme = AriseTheme;
+}
+AriseTheme.init();
 
 const AriseState = {
   // Current active mode: 'prototype' | 'design-system'
   viewMode: 'prototype',
 
-  // Current active screen: 'overview' | 'leaderboard' | 'dsa-topics' | 'dsa-problems' |
-  // 'dsa-workspace' | 'self-study' | 'pdf-reader' | 'learning-catalogue' | 'course-detail' |
-  // 'lesson-player' | 'final-assessment' | 'course-completion' | 'profile' | 'badges' |
-  // 'settings' | 'landing' | 'signup' | 'login' | 'verify-email' | 'onboarding'
-  currentScreen: 'overview',
+  // Current active screen: 'landing' (default landing page) | 'overview' | 'leaderboard' |
+  // 'dsa-topics' | 'dsa-problems' | 'dsa-workspace' | 'self-study' | 'pdf-reader' |
+  // 'learning-catalogue' | 'course-detail' | 'lesson-player' | 'final-assessment' |
+  // 'course-completion' | 'profile' | 'badges' | 'settings' | 'signup' | 'login'
+  currentScreen: 'landing',
 
   // Current viewport: '1440' | '1280' | '768' | '390'
   viewport: '1440',
@@ -40,6 +82,7 @@ const AriseState = {
   dsaFilterDifficulty: 'all', // 'all' | 'Easy' | 'Medium' | 'Hard'
   dsaFilterTopic: 'all',      // 'all' | specific topic
   dsaFilterStatus: 'all',     // 'all' | 'unsolved' | 'attempted' | 'solved'
+  dsaFilterLanguage: 'all',   // 'all' | 'c' | 'cpp' | 'python' | 'java' | 'javascript' | 'typescript' | 'go' | 'rust'
   dsaSearchQuery: '',
   workspaceLeftTab: 'description', // 'description' | 'hints' | 'solution' | 'submissions'
   revealedHints: {}, // problemId -> number of hints revealed (0, 1, 2, 3)
@@ -47,6 +90,7 @@ const AriseState = {
   solutionUnlockConfirmPending: false, // boolean flag for unlocking solution confirmation
   unlockedSolutions: {}, // problemId -> boolean
   submissionsHistory: {}, // problemId -> array of submissions
+  userCode: {}, // problemId_lang -> user's edited source code
 
   // Self Study state
   studyFiles: [],
@@ -57,6 +101,9 @@ const AriseState = {
   studySummaryLoading: false,
   activeStudySessionId: null,
   activeDoc: (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.studyLibrary) ? ARISE_DATA.studyLibrary[0] : null,
+  readerCurrentPage: 1,
+  readerZoom: 100,
+  readerViewMode: 'engine',
   timerRunning: false,
   timerSeconds: 0,
   timerInterval: null,
@@ -88,7 +135,7 @@ const AriseState = {
   learningLoading: false,
 
   // Friends comparison active selections (up to 4 friends)
-  compareFriends: ["ARISE-4P9W2T", "ARISE-8M3X1L"],
+  compareFriends: [],
 
   // Notifications drawer open
   notificationsOpen: false,
@@ -219,12 +266,84 @@ const AriseState = {
   },
 
   setDsaFilterDifficulty(diff) {
-    this.dsaFilterDifficulty = diff;
+    if (this.dsaFilterDifficulty && this.dsaFilterDifficulty.toLowerCase() === (diff || '').toLowerCase() && diff.toLowerCase() !== 'all') {
+      this.dsaFilterDifficulty = 'all';
+    } else {
+      this.dsaFilterDifficulty = diff;
+    }
+    this.notify();
+  },
+
+  setDsaFilterTopic(topic) {
+    this.dsaFilterTopic = topic || 'all';
     this.notify();
   },
 
   setDsaFilterStatus(status) {
-    this.dsaFilterStatus = status;
+    this.dsaFilterStatus = status || 'all';
+    this.notify();
+  },
+
+  setDsaSearchQuery(query) {
+    this.dsaSearchQuery = query || '';
+    this.notify();
+  },
+
+  setDsaFilterLanguage(lang) {
+    if (this.dsaFilterLanguage && this.dsaFilterLanguage.toLowerCase() === (lang || '').toLowerCase() && lang.toLowerCase() !== 'all') {
+      this.dsaFilterLanguage = 'all';
+    } else {
+      this.dsaFilterLanguage = lang;
+      if (lang && lang !== 'all') {
+        this.activeLanguage = lang;
+      }
+    }
+    this.notify();
+  },
+
+  resetDsaFilters() {
+    this.dsaFilterDifficulty = 'all';
+    this.dsaFilterTopic = 'all';
+    this.dsaFilterStatus = 'all';
+    this.dsaFilterLanguage = 'all';
+    this.dsaSearchQuery = '';
+    this.notify();
+  },
+
+  setReaderPage(p) {
+    const totalPages = (this.activeDoc && this.activeDoc.pages) ? this.activeDoc.pages : 16;
+    const pageNum = Math.max(1, Math.min(totalPages, parseInt(p, 10) || 1));
+    this.readerCurrentPage = pageNum;
+    const iframe = typeof document !== 'undefined' ? document.getElementById('pdf-viewer-frame') : null;
+    if (iframe && this.activeDoc && this.activeDoc.blobUrl) {
+      try {
+        iframe.src = `${this.activeDoc.blobUrl}#page=${pageNum}&zoom=${this.readerZoom}`;
+      } catch (e) {}
+    }
+    this.notify();
+  },
+
+  nextReaderPage() {
+    this.setReaderPage(this.readerCurrentPage + 1);
+  },
+
+  prevReaderPage() {
+    this.setReaderPage(this.readerCurrentPage - 1);
+  },
+
+  setReaderZoom(zoom) {
+    this.readerZoom = Math.max(50, Math.min(200, zoom));
+    const iframe = typeof document !== 'undefined' ? document.getElementById('pdf-viewer-frame') : null;
+    if (iframe && this.activeDoc && this.activeDoc.blobUrl) {
+      try {
+        iframe.src = `${this.activeDoc.blobUrl}#page=${this.readerCurrentPage}&zoom=${this.readerZoom}`;
+      } catch (e) {}
+    }
+    this.notify();
+  },
+
+  setReaderViewMode(mode) {
+    this.readerViewMode = mode;
     this.notify();
   },
 
@@ -250,6 +369,49 @@ const AriseState = {
     this.revealedHints[problemId] = Math.min(3, current + 1);
     this.hintConfirmPending = false;
     this.notify();
+  },
+
+  loadUserCode() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('arise_user_code');
+      if (stored) {
+        this.userCode = JSON.parse(stored);
+      }
+    } catch (e) {}
+  },
+
+  saveUserCode(problemId, lang, code) {
+    if (!this.userCode) this.userCode = {};
+    const key = `${problemId}_${lang || 'javascript'}`;
+    this.userCode[key] = code;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('arise_user_code', JSON.stringify(this.userCode));
+      } catch (e) {}
+    }
+  },
+
+  getUserCode(problemId, lang) {
+    if (!this.userCode || Object.keys(this.userCode).length === 0) {
+      this.loadUserCode();
+    }
+    const key = `${problemId}_${lang || 'javascript'}`;
+    if (this.userCode && this.userCode[key] !== undefined) {
+      return this.userCode[key];
+    }
+    return null;
+  },
+
+  clearUserCode(problemId, lang) {
+    if (!this.userCode) return;
+    const key = `${problemId}_${lang || 'javascript'}`;
+    delete this.userCode[key];
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('arise_user_code', JSON.stringify(this.userCode));
+      } catch (e) {}
+    }
   },
 
   requestSolutionUnlock() {
@@ -745,15 +907,31 @@ const AriseState = {
       const files = await this.apiRequest('/study-files');
       this.studyFiles = Array.isArray(files) ? files : [];
       if (typeof ARISE_DATA !== 'undefined') {
-        ARISE_DATA.studyLibrary = this.studyFiles.map(f => ({
-          id: f.id,
-          title: f.original_filename,
-          subject: 'Self Study Material',
-          pages: 1,
-          fileSize: `${(f.size_bytes / (1024 * 1024)).toFixed(1)} MB`,
-          lastOpened: 'Just now',
-          created_at: f.created_at
-        }));
+        const pageLookup = {
+          "Course_101_Data_Structures_Assessment.pdf": 16,
+          "Course_201_Graph_Algorithms_Assessment.pdf": 16,
+          "Course_202_Dynamic_Programming_Assessment.pdf": 16,
+          "Course_301_System_Design_Assessment.pdf": 16,
+          "Course_302_Operating_Systems_Assessment.pdf": 16,
+          "Course_401_Combinatorics_Crypto_Assessment.pdf": 16
+        };
+        ARISE_DATA.studyLibrary = this.studyFiles.map(f => {
+          const pg = f.page_count || pageLookup[f.original_filename] || 16;
+          const sz = f.size_bytes || 0;
+          const formattedSize = sz >= 1048576 ? `${(sz / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(sz / 1024))} KB`;
+          return {
+            id: f.id,
+            title: f.original_filename,
+            original_filename: f.original_filename,
+            subject: 'Self Study Material',
+            pages: pg,
+            fileSize: formattedSize,
+            lastOpened: 'Just now',
+            created_at: f.created_at,
+            storage_key: f.storage_key,
+            blobUrl: f.blobUrl || null
+          };
+        });
       }
       this.studyFilesLoaded = true;
       this.studyLoading = false;
@@ -781,6 +959,25 @@ const AriseState = {
       throw err;
     }
 
+    // Generate blob URL from the user's uploaded file so it is 100% the exact file uploaded
+    let blobUrl = null;
+    let detectedPages = 15;
+    try {
+      if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+        blobUrl = URL.createObjectURL(file);
+      }
+      const text = await file.text();
+      const pageMatches = text.match(/\/Type\s*\/Page\b/g);
+      if (pageMatches && pageMatches.length > 0) {
+        detectedPages = pageMatches.length;
+      } else {
+        const countMatch = text.match(/\/Count\s+(\d+)/);
+        if (countMatch && parseInt(countMatch[1], 10) > 0) {
+          detectedPages = parseInt(countMatch[1], 10);
+        }
+      }
+    } catch (e) {}
+
     if (!token) {
       // Local fallback for guest/unauthenticated demo session
       const localId = 'study-local-' + Date.now();
@@ -788,8 +985,11 @@ const AriseState = {
         id: localId,
         user_id: 'local',
         original_filename: file.name,
+        title: file.name,
         mime_type: 'application/pdf',
         size_bytes: file.size,
+        pages: detectedPages,
+        blobUrl: blobUrl,
         created_at: new Date().toISOString()
       };
       if (!this.studyFiles) this.studyFiles = [];
@@ -799,13 +999,17 @@ const AriseState = {
         ARISE_DATA.studyLibrary.unshift({
           id: localId,
           title: file.name,
+          original_filename: file.name,
           subject: 'Self Study Material',
-          pages: 1,
-          fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+          pages: detectedPages,
+          fileSize: file.size >= 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(file.size / 1024))} KB`,
           lastOpened: 'Just now',
-          created_at: localDoc.created_at
+          created_at: localDoc.created_at,
+          blobUrl: blobUrl
         });
       }
+      this.activeDoc = localDoc;
+      this.readerCurrentPage = 1;
       this.notify();
       return localDoc;
     }
@@ -848,7 +1052,22 @@ const AriseState = {
       throw err;
     }
 
+    data.blobUrl = blobUrl;
+    data.pages = data.page_count || detectedPages;
+
     await this.fetchStudyFiles();
+    const found = (this.studyFiles || []).find(f => f.id === data.id);
+    if (found) {
+      found.blobUrl = blobUrl;
+      found.pages = data.pages;
+    }
+    const foundData = (ARISE_DATA.studyLibrary || []).find(f => f.id === data.id);
+    if (foundData) {
+      foundData.blobUrl = blobUrl;
+      foundData.pages = data.pages;
+    }
+    this.activeDoc = found || foundData || data;
+    this.readerCurrentPage = 1;
     this.notify();
     return data;
   },

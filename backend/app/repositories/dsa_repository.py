@@ -112,7 +112,11 @@ class DSARepository:
         raw = self._problem_map_by_id.get(problem_id.upper()) or self._problem_map_by_slug.get(problem_id.lower())
         if not raw:
             return []
-        return list(raw.get("hidden_test_cases", []))
+        valid_cases = [
+            tc for tc in raw.get("hidden_test_cases", [])
+            if tc.get("input") and not str(tc.get("input", "")).startswith("Hidden Test")
+        ]
+        return valid_cases if valid_cases else list(raw.get("sample_cases", []))
 
     def get_xp_policy(self) -> dict:
         """Returns the active versioned XP policy."""

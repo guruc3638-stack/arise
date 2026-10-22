@@ -44,12 +44,27 @@ class SelfStudyService:
                 detail="Invalid file format. Only valid PDF files starting with '%PDF' are accepted."
             )
 
-        # 3. Store file privately
+        # 3. Detect page count from PDF binary
+        page_count = 1
+        try:
+            import re
+            page_matches = re.findall(rb"/Type\s*/Page\b", content)
+            if page_matches:
+                page_count = len(page_matches)
+            else:
+                count_match = re.search(rb"/Count\s+(\d+)", content)
+                if count_match:
+                    page_count = int(count_match.group(1))
+        except Exception:
+            page_count = 1
+
+        # 4. Store file privately
         meta = {
             "user_id": user_id,
             "original_filename": filename,
             "mime_type": "application/pdf",
             "size_bytes": len(content),
+            "page_count": max(1, page_count),
         }
         saved = await self_study_repo.save_file(meta, content)
         return StudyFileResponse(**saved)

@@ -46,7 +46,7 @@ function renderLeaderboardScreen() {
 
   // Determine students list
   let students = [];
-  if (AriseState.leaderboardData && AriseState.leaderboardData.scope === scope) {
+  if (AriseState.leaderboardData && AriseState.leaderboardData.scope === scope && AriseState.leaderboardData.entries && AriseState.leaderboardData.entries.length > 0) {
     students = (AriseState.leaderboardData.entries || []).map(e => ({
       rank: e.rank,
       name: e.display_name,
@@ -60,13 +60,11 @@ function renderLeaderboardScreen() {
       isCurrentUser: e.is_current_user || (e.uid === user.uid),
       avatar: (e.display_name || "Student").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
     }));
-  } else if (ARISE_DATA.leaderboards && ARISE_DATA.leaderboards[scope]) {
+  } else if (ARISE_DATA.leaderboards && ARISE_DATA.leaderboards[scope] && ARISE_DATA.leaderboards[scope].length > 0) {
     students = ARISE_DATA.leaderboards[scope];
   } else if (ARISE_DATA.leaderboards && ARISE_DATA.leaderboards.maharashtra) {
     students = ARISE_DATA.leaderboards.maharashtra;
   }
-
-  const friendsCount = (AriseState.friendsList && AriseState.friendsList.length) || (ARISE_DATA.friends ? ARISE_DATA.friends.length : 0);
 
   return `
     <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -92,7 +90,7 @@ function renderLeaderboardScreen() {
             onclick="AriseState.leaderboardTab = 'friends'; AriseState.notify();">
             <span style="display: flex; align-items: center; gap: 6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-              Friends Network (${friendsCount})
+              Friends Network
             </span>
           </button>
         </div>

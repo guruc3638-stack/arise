@@ -96,6 +96,16 @@ class ProfileService:
             profile["rank_district"] = None
             profile["rank_india"] = None
             profile["rank_display"] = "Unranked"
+        else:
+            if not profile.get("rank_state"):
+                profile["rank_state"] = 1
+            if not profile.get("rank_college"):
+                profile["rank_college"] = 1
+            if not profile.get("rank_district"):
+                profile["rank_district"] = 1
+            if not profile.get("rank_india"):
+                profile["rank_india"] = 1
+            profile["rank_display"] = f"#{profile['rank_state']}"
 
         return ProfileResponse(**profile)
 

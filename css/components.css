@@ -228,6 +228,18 @@
   background: rgba(13, 18, 32, 0.4);
 }
 
+select.input {
+  cursor: pointer;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+select.input option {
+  background-color: #0F172A;
+  color: #F8FAFC;
+  padding: 6px 10px;
+}
+
 .input-error {
   border-color: var(--error) !important;
   box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.2) !important;
@@ -838,4 +850,78 @@
   color: #FFFFFF;
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
+
+/* ==========================================================================
+   DSA LANGUAGE-WISE FILTER & BADGES
+   ========================================================================== */
+.lang-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  white-space: nowrap;
+}
+
+.lang-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.lang-filter-btn.active {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.5);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+  font-weight: 600;
+}
+
+.lang-tags-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.lang-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all var(--duration-fast);
+}
+
+.lang-tag.highlight {
+  background: rgba(34, 211, 238, 0.15);
+  color: #38BDF8;
+  border-color: rgba(34, 211, 238, 0.4);
+  font-weight: 700;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.25);
+}
+
+.lang-c { color: #94A3B8; }
+.lang-cpp { color: #60A5FA; }
+.lang-python { color: #FCD34D; }
+.lang-java { color: #F97316; }
+.lang-javascript { color: #FBBF24; }
+.lang-typescript { color: #38BDF8; }
+.lang-go { color: #2DD4BF; }
+.lang-rust { color: #FB923C; }
 

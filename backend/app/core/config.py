@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     JUDGE_SERVICE_URL: str = "http://localhost:8080"
     JUDGE_SECRET_TOKEN: str = "local-judge-dev-token"
 
+    # Gemini AI Code Evaluation & Judge Settings
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -21,6 +21,14 @@
   <link rel="stylesheet" href="css/workspace-code.css">
   <link rel="stylesheet" href="css/design-system.css">
   <link rel="stylesheet" href="css/mobile-simulator.css">
+  <script>
+    (function() {
+      try {
+        var saved = localStorage.getItem('arise_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <!-- Application Container Root -->
@@ -42,6 +50,7 @@
   <script src="js/screens/leaderboard.js"></script>
   <script src="js/judge-engine.js"></script>
   <script src="js/screens/dsa.js"></script>
+  <script src="js/curricula.js"></script>
   <script src="js/screens/self-study.js"></script>
   <script src="js/screens/learning.js"></script>
   <script src="js/screens/profile.js"></script>

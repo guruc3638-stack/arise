@@ -281,12 +281,112 @@
     return code;
   }
 
+  // Transpile C DSA code to runnable JS
+  function transpileCToJs(cCode, funcName) {
+    let code = cCode;
+    code = code.replace(/#include\s+<.*?>/g, '');
+    code = code.replace(/#define\s+.*$/gm, '');
+    code = code.replace(/=\s*(?:\([a-zA-Z0-9_*]+\)\s*)?(?:malloc|calloc)\([\s\S]*?\)\s*;/g, '= [];');
+    code = code.replace(/free\([^)]+\);?/g, '');
+    code = code.replace(/sizeof\([^)]+\)/g, '1');
+    code = code.replace(/\bNULL\b/g, 'null');
+    code = code.replace(/\*returnSize\s*=\s*[^;]+;/g, '');
+
+    code = code.replace(/(?:int\*|int|bool|char\*|void|double|long long)\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*\{/g, (m, name, args) => {
+      const cleanArgs = args.split(',').map(a => a.trim().split(/\s+/).pop().replace(/[*&]/g, '')).filter(Boolean);
+      return `function ${name}(...__args) {
+        let ${cleanArgs.join(', ')};
+        if (__args.length === 1) {
+          ${cleanArgs[0]} = __args[0];
+          if ("${cleanArgs.join(',')}".includes('Size')) {
+            ${cleanArgs[1] || '__sz'} = (__args[0] && __args[0].length !== undefined) ? __args[0].length : 0;
+          }
+        } else if (__args.length === 2 && "${cleanArgs.join(',')}".includes('Size')) {
+          ${cleanArgs[0]} = __args[0];
+          ${cleanArgs[1]} = (__args[0] && __args[0].length !== undefined) ? __args[0].length : 0;
+          ${cleanArgs[2] || '__arg2'} = __args[1];
+        } else {
+          ${cleanArgs.map((arg, idx) => `${arg} = __args[${idx}];`).join('\n')}
+        }
+      `;
+    });
+
+    code = code.replace(/\b(?:int|char|bool|double|float|long long|long|short)\b\s*\*?\s*([a-zA-Z0-9_]+)\s*=/g, 'let $1 =');
+    code = code.replace(/\b(?:int|char|bool|double|float|long long|long|short)\b\s*\*?\s*([a-zA-Z0-9_]+)\s*;/g, 'let $1;');
+    code = code.replace(/for\s*\(\s*let\s+([a-zA-Z0-9_]+)\s*=/g, 'for (let $1 =');
+    code = code.replace(/strlen\((.*?)\)/g, '($1).length');
+    code = code.replace(/\babs\((.*?)\)/g, 'Math.abs($1)');
+    code = code.replace(/\bfmax\((.*?),\s*(.*?)\)/g, 'Math.max($1, $2)');
+    code = code.replace(/\bfmin\((.*?),\s*(.*?)\)/g, 'Math.min($1, $2)');
+
+    return code;
+  }
+
+  // Transpile TypeScript DSA code to runnable JS
+  function transpileTypeScriptToJs(tsCode, funcName) {
+    let code = tsCode;
+    code = code.replace(/<[A-Za-z0-9_,\s\[\]]+>(?=\s*\()/g, '');
+    code = code.replace(/:\s*(?:number\[\]|number|string\[\]|string|boolean|any|void|Record<.*?>|Map<.*?>|Set<.*?>)(?=[,)={;\n])/g, '');
+    code = code.replace(/function\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*:\s*[a-zA-Z0-9_\[\]<>\s,|]+\s*\{/g, 'function $1($2) {');
+    code = code.replace(/:\s*[a-zA-Z0-9_\[\]<>\s,|]+(?=\s*[=;])/g, '');
+    code = code.replace(/as\s+[a-zA-Z0-9_\[\]<>]+/g, '');
+    code = code.replace(/!/g, '');
+    return code;
+  }
+
+  // Transpile Go DSA code to runnable JS
+  function transpileGoToJs(goCode, funcName) {
+    let code = goCode;
+    code = code.replace(/package\s+main/g, '');
+    code = code.replace(/import\s+\(.*?\)/gs, '');
+    code = code.replace(/import\s+".*?"/g, '');
+    code = code.replace(/func\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*(?:\[\]int|int|bool|string|\[\]string)?\s*\{/g, (m, name, args) => {
+      const cleanArgs = args.split(',').map(a => a.trim().split(/\s+/)[0]).filter(Boolean);
+      return `function ${name}(${cleanArgs.join(', ')}) {`;
+    });
+    // Handle if idx, ok := seen[comp]; ok {
+    code = code.replace(/if\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*:=\s*([a-zA-Z0-9_]+)\[(.*?)\];\s*\2\s*\{/g, 'let $1 = $3[$4]; if ($1 !== undefined) {');
+    // Handle for i, num := range nums { BEFORE general :=
+    code = code.replace(/for\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*:=\s*range\s+(.*?)\s*\{/g, 'for (let [$1, $2] of ($3).entries()) {');
+    code = code.replace(/for\s+([a-zA-Z0-9_]+)\s*:=\s*/g, 'for (let $1 = ');
+    code = code.replace(/\[\](?:int|string|bool)\{([^}]*)\}/g, '[$1]');
+    code = code.replace(/([a-zA-Z0-9_]+)\s*:=\s*/g, 'let $1 = ');
+    code = code.replace(/len\((.*?)\)/g, '($1).length');
+    code = code.replace(/append\(([a-zA-Z0-9_]+),\s*(.*?)\)/g, '$1.concat([$2])');
+    code = code.replace(/make\(map\[.*?\]\s*.*?\)/g, '{}');
+    code = code.replace(/make\(\[\]int,\s*.*?\)/g, '[]');
+    return code;
+  }
+
+  // Transpile Rust DSA code to runnable JS
+  function transpileRustToJs(rustCode, funcName) {
+    let code = rustCode;
+    code = code.replace(/use\s+[a-zA-Z0-9_:]+;/g, '');
+    code = code.replace(/impl\s+Solution\s*\{/g, '');
+    code = code.replace(/\}\s*$/g, '');
+    code = code.replace(/pub\s+fn\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*(?:->\s*[a-zA-Z0-9_<>\s,|]+)?\s*\{/g, (m, name, args) => {
+      const cleanArgs = args.split(',').map(a => a.trim().split(/\s*:\s*/)[0].replace(/mut\s+/, '').replace(/[&*]/g, '')).filter(Boolean);
+      return `function ${name}(${cleanArgs.join(', ')}) {`;
+    });
+    code = code.replace(/for\s*\(([a-zA-Z0-9_]+),\s*&?([a-zA-Z0-9_]+)\)\s*in\s*([a-zA-Z0-9_]+)\.iter\(\)\.enumerate\(\)\s*\{/g, 'for (let [$1, $2] of ($3).entries()) {');
+    code = code.replace(/if\s+let\s+Some\(&?([a-zA-Z0-9_]+)\)\s*=\s*([a-zA-Z0-9_]+)\.get\(&?(.*?)\)\s*\{/g, 'let $1 = $2[$3]; if ($1 !== undefined) {');
+    code = code.replace(/HashMap::new\(\)/g, '{}');
+    code = code.replace(/([a-zA-Z0-9_]+)\.insert\((.*?),\s*(.*?)\);/g, '$1[$2] = $3;');
+    code = code.replace(/as\s+i32/g, '');
+    code = code.replace(/let\s+mut\s+/g, 'let ');
+    code = code.replace(/return\s+vec!\[(.*?)\];?/g, 'return [$1];');
+    code = code.replace(/vec!\[(.*?)\];?/g, 'return [$1];');
+    code = code.replace(/i32::MAX/g, 'Infinity');
+    code = code.replace(/i32::MIN/g, '-Infinity');
+    return code;
+  }
+
   // Find the callable function name from user code or problem definition
   function detectFunctionName(code, problem) {
     if (problem && problem.functionName) return problem.functionName;
     const match = code.match(/function\s+([a-zA-Z0-9_]+)\s*\(/) || 
                   code.match(/def\s+([a-zA-Z0-9_]+)\s*\(/) ||
-                  code.match(/(?:vector<.*?>|int|string|bool)\s+([a-zA-Z0-9_]+)\s*\(/);
+                  code.match(/(?:vector<.*?>|int\*|int|string|bool)\s+([a-zA-Z0-9_]+)\s*\(/);
     return match ? match[1] : (problem ? problem.slug : 'solve');
   }
 
@@ -297,18 +397,29 @@
       runnableJs = transpilePythonToJs(rawCode, funcName);
     } else if (language === 'cpp') {
       runnableJs = transpileCppToJs(rawCode, funcName);
+    } else if (language === 'c') {
+      runnableJs = transpileCToJs(rawCode, funcName);
     } else if (language === 'java') {
       runnableJs = transpileJavaToJs(rawCode, funcName);
+    } else if (language === 'typescript') {
+      runnableJs = transpileTypeScriptToJs(rawCode, funcName);
+    } else if (language === 'go') {
+      runnableJs = transpileGoToJs(rawCode, funcName);
+    } else if (language === 'rust') {
+      runnableJs = transpileRustToJs(rawCode, funcName);
     }
 
-    // Try compiling into executable function
+    // Try compiling into executable function with camelCase and snake_case alias support
+    const snakeName = funcName.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     const wrappedCode = `
       "use strict";
       ${runnableJs}
       if (typeof ${funcName} === 'function') return ${funcName};
+      if (typeof ${snakeName} === 'function') return ${snakeName};
       if (typeof Solution === 'function') {
         const inst = new Solution();
         if (typeof inst.${funcName} === 'function') return inst.${funcName}.bind(inst);
+        if (typeof inst.${snakeName} === 'function') return inst.${snakeName}.bind(inst);
       }
       throw new ReferenceError("Function '${funcName}' was not defined in your submission.");
     `;
@@ -355,7 +466,7 @@
 
       // 3. Execution & Verification Phase across test cases
       const testCasesToRun = isSampleOnly ? cases.slice(0, 3) : cases;
-      const startTime = performance.now();
+      const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
       for (let i = 0; i < testCasesToRun.length; i++) {
         const tc = testCasesToRun[i];
@@ -389,7 +500,8 @@
         }
 
         // Check for infinite loop / TLE (> 2000 ms)
-        if (performance.now() - startTime > 2000) {
+        const currentElapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime;
+        if (currentElapsed > 2000) {
           return {
             status: 'tle',
             testCaseIndex: i + 1,
@@ -425,7 +537,8 @@
       }
 
       // 4. All Test Cases Passed
-      const elapsedMs = Math.max(2, Math.round(performance.now() - startTime));
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const elapsedMs = Math.max(2, Math.round(now - startTime));
       return {
         status: 'accepted',
         totalCases: testCasesToRun.length,

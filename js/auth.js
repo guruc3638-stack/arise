@@ -467,13 +467,13 @@ const AriseAuth = {
       ARISE_DATA.currentUser.rankDisplay = "Unranked";
     }
 
-    // 4. Update browser history to prevent Back button from viewing protected pages
+    // 4. Update browser history to landing root
     if (window.history && window.history.replaceState) {
-      window.history.replaceState(null, '', '#/login');
+      window.history.replaceState(null, '', '#/');
     }
 
-    // 5. Redirect directly to login screen
-    AriseState.setScreen('login');
+    // 5. Redirect directly to landing screen
+    AriseState.setScreen('landing');
 
     if (typeof showToast === 'function') {
       showToast("Signed out successfully.", "info");
@@ -488,11 +488,11 @@ const AriseAuth = {
     const isAuth = this.isAuthenticated();
 
     if (!isAuth) {
-      // Unauthenticated visitor trying to access a protected route -> redirect to login
+      // Unauthenticated visitor trying to access a protected route -> redirect to landing
       if (this.protectedScreens.includes(currentScreen)) {
-        AriseState.currentScreen = 'login';
+        AriseState.currentScreen = 'landing';
         if (window.history && window.history.replaceState) {
-          window.history.replaceState(null, '', '#/login');
+          window.history.replaceState(null, '', '#/');
         }
         AriseState.notify();
         return false;
@@ -513,7 +513,7 @@ const AriseAuth = {
 
   navigateTo(screen) {
     AriseState.setScreen(screen);
-    const hash = screen === 'overview' ? '#/dashboard' : `#/${screen}`;
+    const hash = (screen === 'landing') ? '#/' : (screen === 'overview' ? '#/dashboard' : `#/${screen}`);
     if (window.history && window.history.pushState) {
       window.history.pushState(null, '', hash);
     }
@@ -527,7 +527,10 @@ const AriseAuth = {
     let targetScreen = null;
 
     if (hash === '#/login' || path === '/login') targetScreen = 'login';
-    else if (hash === '#/signup' || path === '/signup') targetScreen = 'signup';
+    else if (hash === '#/signup' || path === '/signup' || hash === '#/register' || path === '/register') targetScreen = 'signup';
+    else if (hash === '#/landing' || hash === '#/' || hash === '' || path === '/') {
+      targetScreen = this.isAuthenticated() ? 'overview' : 'landing';
+    }
     else if (hash === '#/dashboard' || path === '/dashboard' || hash === '#/overview') targetScreen = 'overview';
     else if (hash === '#/leaderboard') targetScreen = 'leaderboard';
     else if (hash === '#/dsa') targetScreen = 'dsa-problems';

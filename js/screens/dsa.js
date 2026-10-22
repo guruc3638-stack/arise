@@ -112,6 +112,7 @@ function renderDsaProblemList() {
   const currentDiff = AriseState.dsaFilterDifficulty || 'all';
   const currentTopic = AriseState.dsaFilterTopic || 'all';
   const currentStatus = AriseState.dsaFilterStatus || 'all';
+  const currentLang = AriseState.dsaFilterLanguage || 'all';
   const searchQuery = (AriseState.dsaSearchQuery || '').trim().toLowerCase();
 
   // Apply filtering
@@ -132,7 +133,12 @@ function renderDsaProblemList() {
     filtered = filtered.filter(p => p.status.toLowerCase() === currentStatus.toLowerCase());
   }
 
-  // 4. Search Filter
+  // 4. Language Filter (C, C++, Python, Java, JavaScript, TypeScript, Go, Rust)
+  if (currentLang !== 'all') {
+    filtered = filtered.filter(p => p.starterCode && p.starterCode[currentLang]);
+  }
+
+  // 5. Search Filter
   if (searchQuery) {
     filtered = filtered.filter(p =>
       p.title.toLowerCase().includes(searchQuery) ||
@@ -142,7 +148,7 @@ function renderDsaProblemList() {
     );
   }
 
-  const hasActiveFilters = currentDiff !== 'all' || currentTopic !== 'all' || currentStatus !== 'all' || searchQuery.length > 0;
+  const hasActiveFilters = currentDiff !== 'all' || currentTopic !== 'all' || currentStatus !== 'all' || currentLang !== 'all' || searchQuery.length > 0;
   const availableTopics = Array.from(new Set(allProblems.map(p => p.topic))).sort();
 
   return `
@@ -153,14 +159,17 @@ function renderDsaProblemList() {
           <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <h1 style="font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">DSA Practice Repository</h1>
             <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #C4B5FD; border: 1px solid rgba(139, 92, 246, 0.3);">
-              ${totalCount} Original Problems
+              ${totalCount} LeetCode Problems
             </span>
             <span class="badge" style="background: rgba(34, 197, 94, 0.12); color: #4ADE80; border: 1px solid rgba(34, 197, 94, 0.25);">
               Judge Verified XP Only
             </span>
+            <span class="badge" style="background: rgba(34, 211, 238, 0.12); color: var(--accent-cyan); border: 1px solid rgba(34, 211, 238, 0.3);">
+              8 Languages Supported
+            </span>
           </div>
           <p class="text-small text-muted" style="margin-top: 4px;">
-            Original synthetic algorithmic problems. Verified XP is awarded exclusively upon confirmed sandbox acceptance.
+            Authentic LeetCode algorithmic problems with language-wise execution for C, C++, Python, Java, JavaScript, TypeScript, Go, and Rust.
           </p>
         </div>
 
@@ -170,7 +179,7 @@ function renderDsaProblemList() {
         </button>
       </div>
 
-      <!-- 1. DIFFICULTY SEPARATION TABS & FILTERS -->
+      <!-- 1. DIFFICULTY & LANGUAGE-WISE SEPARATION TABS & FILTERS -->
       <div class="glass-card" style="padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);">
           <!-- PROMINENT DIFFICULTY TABS (All, Easy, Medium, Hard) -->
@@ -226,27 +235,102 @@ function renderDsaProblemList() {
           </div>
         </div>
 
+        <!-- 2. LANGUAGE-WISE DSA FILTER BAR (C, C++, Python, Java, JavaScript, TypeScript, Go, Rust) -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: var(--space-2); border-top: 1px solid var(--border-subtle);">
+          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-cyan); margin-right: 2px;">
+            Languages:
+          </span>
+          <div class="filter-pill-group" style="flex-wrap: wrap;">
+            <button 
+              class="lang-filter-btn ${currentLang === 'all' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('all')"
+              title="Show all 8 LeetCode languages"
+            >
+              All Languages (8)
+            </button>
+            <button 
+              class="lang-filter-btn ${currentLang === 'c' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('c')"
+              title="Filter by C"
+            >
+              <span class="lang-c" style="font-weight: 700;">●</span> C
+            </button>
+            <button 
+              class="lang-filter-btn ${currentLang === 'cpp' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('cpp')"
+              title="Filter by C++ 20"
+            >
+              <span class="lang-cpp" style="font-weight: 700;">●</span> C++
+            </button>
+            <button 
+              class="lang-filter-btn ${currentLang === 'python' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('python')"
+              title="Filter by Python 3.12"
+            >
+              <span class="lang-python" style="font-weight: 700;">●</span> Python
+            </button>
+            <button 
+              class="lang-filter-btn ${currentLang === 'java' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('java')"
+              title="Filter by Java 21 LTS"
+            >
+              <span class="lang-java" style="font-weight: 700;">●</span> Java
+            </button>
+            <button 
+              class="lang-filter-btn ${currentLang === 'javascript' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('javascript')"
+              title="Filter by JavaScript (Node 20)"
+            >
+              <span class="lang-javascript" style="font-weight: 700;">●</span> JavaScript
+            </button>
+            <button 
+              class="lang-filter-btn ${currentLang === 'typescript' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('typescript')"
+              title="Filter by TypeScript 5.3"
+            >
+              <span class="lang-typescript" style="font-weight: 700;">●</span> TypeScript
+            </button>
+            <button 
+              class="lang-filter-btn ${currentLang === 'go' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('go')"
+              title="Filter by Go 1.22"
+            >
+              <span class="lang-go" style="font-weight: 700;">●</span> Go
+            </button>
+            <button 
+              class="lang-filter-btn ${currentLang === 'rust' ? 'active' : ''}" 
+              onclick="AriseState.setDsaFilterLanguage('rust')"
+              title="Filter by Rust 1.75"
+            >
+              <span class="lang-rust" style="font-weight: 700;">●</span> Rust
+            </button>
+          </div>
+        </div>
+
         <!-- SEARCH + TOPIC + STATUS + RESET ROW -->
         <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding-top: var(--space-2); border-top: 1px solid var(--border-subtle);">
           <!-- Real-Time Search -->
           <div class="search-input-box" style="flex: 1; min-width: 240px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input 
+              id="dsa-search-input"
               type="text" 
-              placeholder="Search by title, mono ID (e.g. ARISE-P101), or topic..." 
+              placeholder="Search by title (e.g. Two Sum, Valid Parentheses), mono ID (e.g. ARISE-P101), or topic..." 
               value="${escapeHtml(AriseState.dsaSearchQuery || '')}"
-              oninput="AriseState.setDsaSearchQuery(this.value)"
+              oninput="handleDsaSearchInput(this.value)"
               style="background: transparent; border: none; outline: none; font-size: 13px; color: var(--text-primary); width: 100%;" 
             />
             ${searchQuery ? `
-              <button class="btn-ghost" style="padding: 2px 6px; font-size: 11px; color: var(--text-muted); cursor: pointer;" onclick="AriseState.setDsaSearchQuery('');">✕</button>
+              <button class="btn-ghost" style="padding: 2px 6px; font-size: 11px; color: var(--text-muted); cursor: pointer;" onclick="handleDsaSearchInput('');">✕</button>
             ` : ''}
           </div>
 
           <!-- Topic Filter -->
           <select 
+            id="dsa-topic-filter"
             class="input" 
-            style="width: auto; padding: 6px 12px; font-size: 12.5px;"
+            aria-label="Filter problems by topic"
+            style="width: auto; padding: 6px 12px; font-size: 12.5px; cursor: pointer;"
             onchange="AriseState.setDsaFilterTopic(this.value)"
           >
             <option value="all" ${currentTopic === 'all' ? 'selected' : ''}>All Topics (${availableTopics.length})</option>
@@ -257,8 +341,10 @@ function renderDsaProblemList() {
 
           <!-- Status Filter (unsolved, attempted, solved) -->
           <select 
+            id="dsa-status-filter"
             class="input" 
-            style="width: auto; padding: 6px 12px; font-size: 12.5px;"
+            aria-label="Filter problems by status"
+            style="width: auto; padding: 6px 12px; font-size: 12.5px; cursor: pointer;"
             onchange="AriseState.setDsaFilterStatus(this.value)"
           >
             <option value="all" ${currentStatus === 'all' ? 'selected' : ''}>All Statuses</option>
@@ -280,6 +366,7 @@ function renderDsaProblemList() {
         <div>
           Showing <b style="color: var(--text-primary); font-family: var(--font-mono);">${filtered.length}</b> of ${totalCount} problems
           ${currentDiff !== 'all' ? `• Difficulty: <b style="color: var(--text-secondary);">${currentDiff}</b>` : ''}
+          ${currentLang !== 'all' ? `• Language: <b style="color: var(--accent-cyan); text-transform: uppercase;">${currentLang}</b>` : ''}
           ${currentTopic !== 'all' ? `• Topic: <b style="color: var(--text-secondary);">${currentTopic}</b>` : ''}
           ${currentStatus !== 'all' ? `• Status: <b style="color: var(--text-secondary);">${currentStatus}</b>` : ''}
           ${searchQuery ? `• Search: "<b style="color: var(--text-secondary);">${searchQuery}</b>"` : ''}
@@ -289,7 +376,7 @@ function renderDsaProblemList() {
         </div>
       </div>
 
-      <!-- PROBLEM LIST TABLE (status, mono ID, title, topic tags, difficulty badge icon+text, acceptance rate) -->
+      <!-- PROBLEM LIST TABLE (status, mono ID, title, topic tags, languages, difficulty badge icon+text, acceptance rate) -->
       <div class="surface-opaque" style="padding: 0; overflow: hidden;">
         ${filtered.length === 0 ? `
           <div class="empty-state" style="padding: 48px 24px;">
@@ -298,7 +385,7 @@ function renderDsaProblemList() {
             </div>
             <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">No Problems Match Your Active Filters</h3>
             <p class="text-small text-muted" style="max-width: 420px;">
-              Try clearing the difficulty button, topic selector, or search keyword.
+              Try clearing the difficulty button, language selector, topic, or search keyword.
             </p>
             <button class="btn btn-primary btn-sm" style="margin-top: 12px;" onclick="resetDsaFilters()">
               Clear All Filters
@@ -308,14 +395,15 @@ function renderDsaProblemList() {
           <table class="arise-table" aria-label="DSA Problems List">
             <thead>
               <tr>
-                <th style="width: 105px;">Status</th>
-                <th style="width: 125px;">Problem ID</th>
+                <th style="width: 100px;">Status</th>
+                <th style="width: 110px;">ID</th>
                 <th>Title</th>
-                <th style="width: 130px;">Topic Tags</th>
-                <th style="width: 115px;">Difficulty</th>
-                <th style="width: 115px;">Acceptance</th>
-                <th style="width: 105px; text-align: right;">Verified XP</th>
-                <th style="width: 95px; text-align: center;">Action</th>
+                <th style="width: 115px;">Topic</th>
+                <th style="width: 140px;">Languages</th>
+                <th style="width: 105px;">Difficulty</th>
+                <th style="width: 95px;">Acceptance</th>
+                <th style="width: 95px; text-align: right;">Verified XP</th>
+                <th style="width: 85px; text-align: center;">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -351,9 +439,23 @@ function renderDsaProblemList() {
                       </div>
                     </td>
 
-                    <!-- Topic Tags -->
+                    <!-- Topic Tag -->
                     <td>
                       <span class="topic-tag">${p.topic}</span>
+                    </td>
+
+                    <!-- Supported Languages -->
+                    <td>
+                      <div class="lang-tags-row">
+                        <span class="lang-tag lang-c ${currentLang === 'c' ? 'highlight' : ''}">C</span>
+                        <span class="lang-tag lang-cpp ${currentLang === 'cpp' ? 'highlight' : ''}">C++</span>
+                        <span class="lang-tag lang-python ${currentLang === 'python' ? 'highlight' : ''}">Py</span>
+                        <span class="lang-tag lang-java ${currentLang === 'java' ? 'highlight' : ''}">Java</span>
+                        <span class="lang-tag lang-javascript ${currentLang === 'javascript' ? 'highlight' : ''}">JS</span>
+                        <span class="lang-tag lang-typescript ${currentLang === 'typescript' ? 'highlight' : ''}">TS</span>
+                        <span class="lang-tag lang-go ${currentLang === 'go' ? 'highlight' : ''}">Go</span>
+                        <span class="lang-tag lang-rust ${currentLang === 'rust' ? 'highlight' : ''}">Rust</span>
+                      </div>
                     </td>
 
                     <!-- Difficulty Badge (Icon Plus Text) -->
@@ -390,12 +492,35 @@ function renderDsaProblemList() {
   `;
 }
 
+function handleDsaSearchInput(val) {
+  if (AriseState.setDsaSearchQuery) {
+    AriseState.setDsaSearchQuery(val);
+  } else {
+    AriseState.dsaSearchQuery = val;
+    AriseState.notify();
+  }
+  // Restore focus and cursor position after re-render
+  setTimeout(() => {
+    const input = document.getElementById('dsa-search-input');
+    if (input) {
+      input.focus();
+      const len = input.value ? input.value.length : 0;
+      input.setSelectionRange(len, len);
+    }
+  }, 0);
+}
+
 function resetDsaFilters() {
-  AriseState.dsaFilterDifficulty = 'all';
-  AriseState.dsaFilterTopic = 'all';
-  AriseState.dsaFilterStatus = 'all';
-  AriseState.dsaSearchQuery = '';
-  AriseState.notify();
+  if (AriseState.resetDsaFilters) {
+    AriseState.resetDsaFilters();
+  } else {
+    AriseState.dsaFilterDifficulty = 'all';
+    AriseState.dsaFilterTopic = 'all';
+    AriseState.dsaFilterStatus = 'all';
+    AriseState.dsaFilterLanguage = 'all';
+    AriseState.dsaSearchQuery = '';
+    AriseState.notify();
+  }
 }
 
 function cleanDescPreview(text) {
@@ -424,6 +549,9 @@ function openProblemWorkspace(problemId) {
     AriseState.workspaceLeftTab = 'description';
     AriseState.hintConfirmPending = false;
     AriseState.solutionUnlockConfirmPending = false;
+    if (AriseState.dsaFilterLanguage && AriseState.dsaFilterLanguage !== 'all') {
+      AriseState.activeLanguage = AriseState.dsaFilterLanguage;
+    }
     AriseState.setScreen('dsa-workspace');
 
     // Asynchronously fetch full workspace details if online
@@ -465,7 +593,10 @@ function renderDsaCodingWorkspace() {
   const lang = AriseState.activeLanguage || 'javascript';
   const judgeStatus = AriseState.judgeStatus || 'idle';
   const activeLeftTab = AriseState.workspaceLeftTab || 'description';
-  const codeContent = (p.starterCode && p.starterCode[lang]) || (p.starterCode && p.starterCode.javascript) || (p.starterCode && p.starterCode.cpp) || '';
+  const savedUserCode = AriseState.getUserCode ? AriseState.getUserCode(p.id, lang) : null;
+  const codeContent = (savedUserCode !== null && savedUserCode !== undefined)
+    ? savedUserCode
+    : ((p.starterCode && p.starterCode[lang]) || (p.starterCode && p.starterCode.javascript) || (p.starterCode && p.starterCode.cpp) || '');
   const diffIcon = p.difficulty === 'Easy' ? '●' : p.difficulty === 'Medium' ? '■' : '▲';
 
   // Hints counter
@@ -570,10 +701,14 @@ function renderDsaCodingWorkspace() {
             <div class="panel-tab-bar">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <select class="input" style="padding: 3px 8px; font-size: 12px; width: auto; font-family: var(--font-mono);" onchange="switchEditorLanguage(this.value)">
-                  <option value="javascript" ${lang === 'javascript' ? 'selected' : ''}>JavaScript (Node 20)</option>
-                  <option value="python" ${lang === 'python' ? 'selected' : ''}>Python 3.12</option>
+                  <option value="c" ${lang === 'c' ? 'selected' : ''}>C (GCC 13.2)</option>
                   <option value="cpp" ${lang === 'cpp' ? 'selected' : ''}>C++ 20 (GCC 13.2)</option>
+                  <option value="python" ${lang === 'python' ? 'selected' : ''}>Python 3.12</option>
                   <option value="java" ${lang === 'java' ? 'selected' : ''}>Java 21 LTS</option>
+                  <option value="javascript" ${lang === 'javascript' ? 'selected' : ''}>JavaScript (Node 20)</option>
+                  <option value="typescript" ${lang === 'typescript' ? 'selected' : ''}>TypeScript (TS 5.3)</option>
+                  <option value="go" ${lang === 'go' ? 'selected' : ''}>Go (Go 1.22)</option>
+                  <option value="rust" ${lang === 'rust' ? 'selected' : ''}>Rust (rustc 1.75)</option>
                 </select>
                 <span class="text-small text-muted font-mono" style="font-size: 11px;">Dark Surface #0B0F1C</span>
               </div>
@@ -590,7 +725,7 @@ function renderDsaCodingWorkspace() {
               <div class="editor-line-numbers">
                 ${Array.from({ length: 28 }, (_, i) => `<div>${i + 1}</div>`).join('')}
               </div>
-              <textarea id="code-editor-input" class="editor-textarea" spellcheck="false">${escapeHtml(codeContent)}</textarea>
+              <textarea id="code-editor-input" class="editor-textarea" spellcheck="false" oninput="if(AriseState.saveUserCode) AriseState.saveUserCode('${p.id}', '${lang}', this.value)">${escapeHtml(codeContent)}</textarea>
             </div>
           </div>
 
@@ -622,8 +757,8 @@ function renderDsaCodingWorkspace() {
             <!-- Bottom Workspace Controls: RUN CODE & SUBMIT SOLUTION -->
             <div class="workspace-bottom-bar">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 11px; color: var(--text-muted);">
-                  Judge Engine: <b style="color: var(--text-secondary);">Isolated Sandbox v3.4 (Real Evaluation)</b>
+                <span style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                  Judge Engine: <b style="color: var(--accent-cyan);">⚡ Gemini AI & Isolated Sandbox v3.4 (Real Evaluation)</b>
                 </span>
               </div>
 
@@ -1267,27 +1402,23 @@ function formatMarkdownInline(str) {
 }
 
 function switchEditorLanguage(newLang) {
-  AriseState.activeLanguage = newLang;
   const p = AriseState.activeProblem;
-  if (p && p.starterCode && p.starterCode[newLang]) {
-    const editor = document.getElementById('code-editor-input');
-    if (editor) {
-      editor.value = p.starterCode[newLang];
-    }
+  const oldLang = AriseState.activeLanguage || 'javascript';
+  const editor = document.getElementById('code-editor-input');
+  if (editor && p && AriseState.saveUserCode) {
+    AriseState.saveUserCode(p.id, oldLang, editor.value);
   }
+  AriseState.activeLanguage = newLang;
   AriseState.notify();
 }
 
 function resetEditorCode(problemId) {
-  const p = ARISE_DATA.problems.find(item => item.id === problemId);
   const lang = AriseState.activeLanguage || 'javascript';
-  if (p && p.starterCode && p.starterCode[lang]) {
-    const editor = document.getElementById('code-editor-input');
-    if (editor) {
-      editor.value = p.starterCode[lang];
-    }
-    showToast('Code reset to default starter template.', 'info');
+  if (AriseState.clearUserCode) {
+    AriseState.clearUserCode(problemId, lang);
   }
+  AriseState.notify();
+  showToast('Code reset to default starter template.', 'info');
 }
 
 function runSampleTestCases() {
@@ -1296,6 +1427,10 @@ function runSampleTestCases() {
   const editor = document.getElementById('code-editor-input');
   const userCode = editor ? editor.value : '';
   const lang = AriseState.activeLanguage || 'javascript';
+
+  if (AriseState.saveUserCode) {
+    AriseState.saveUserCode(p.id, lang, userCode);
+  }
 
   AriseState.judgeStatus = 'running';
   AriseState.notify();
@@ -1480,6 +1615,10 @@ async function submitSolutionToJudge(forceState) {
   const userCode = editor ? editor.value : '';
   const lang = AriseState.activeLanguage || 'javascript';
 
+  if (AriseState.saveUserCode) {
+    AriseState.saveUserCode(p.id, lang, userCode);
+  }
+
   // Rule T-08: External practice problems cannot be evaluated by the ARISE judge
   if (p.verification_mode === 'EXTERNAL_LINK' || p.source === 'LEETCODE' || p.source === 'HACKERRANK') {
     showToast('External practice problems are practiced on the host platform and award 0 verified XP.', 'info');
@@ -1507,11 +1646,12 @@ async function submitSolutionToJudge(forceState) {
   // Check if live authenticated session is active
   if (typeof AriseState !== 'undefined' && AriseState.authToken) {
     try {
-      const idempotencyKey = 'sub-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+      const geminiKey = (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_gemini_key') : null) || AriseState.geminiApiKey || undefined;
       const res = await AriseState.apiRequest(`/problems/${p.id}/submissions`, 'POST', {
         language: lang,
         source_code: userCode,
-        idempotency_key: idempotencyKey
+        idempotency_key: idempotencyKey,
+        gemini_api_key: geminiKey
       });
 
       let uiStatus = 'wa';
@@ -1564,3 +1704,4 @@ window.switchEditorLanguage = switchEditorLanguage;
 window.resetEditorCode = resetEditorCode;
 window.resetDsaFilters = resetDsaFilters;
 window.selectDsaTopic = selectDsaTopic;
+window.handleDsaSearchInput = handleDsaSearchInput;

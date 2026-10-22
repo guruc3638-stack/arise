@@ -52,8 +52,8 @@ function renderCourseCatalogue() {
         </div>
       </div>
 
-      <!-- Course Cards Grid -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: var(--space-6);">
+      <!-- Course Cards Grid (Compact & Responsive) -->
+      <div class="learning-track-grid">
         ${courses.map(c => {
           const cId = c.id;
           const completedCount = c.completed_lessons != null ? c.completed_lessons : (c.completedLessons || 0);
@@ -64,55 +64,56 @@ function renderCourseCatalogue() {
           const skillsList = c.skills || [];
 
           return `
-            <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-5);">
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
-                  <span class="badge" style="background: rgba(139,92,246,0.15); color: #C4B5FD; border: 1px solid rgba(139,92,246,0.3);">
+            <div class="glass-card learning-track-card" onclick="openCourse('${cId}')" style="cursor: pointer;">
+              <div class="track-card-body">
+                <div class="track-card-header">
+                  <span class="track-badge">
                     ${c.category}
                   </span>
-                  <span class="text-small text-muted font-mono">${c.duration}</span>
+                  <span class="track-duration font-mono">${c.duration}</span>
                 </div>
 
-                <h3 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; line-height: 1.4;">
+                <h3 class="track-title" title="${c.title}">
                   ${c.title}
                 </h3>
 
-                <p class="text-small text-secondary" style="margin-bottom: var(--space-3); line-height: 1.5;">
+                <p class="track-desc" title="${c.description || ''}">
                   ${c.description || ''}
                 </p>
 
-                <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--space-4);">
-                  ${skillsList.map(s => `<span class="topic-tag">${s}</span>`).join('')}
+                <div class="track-skills">
+                  ${skillsList.slice(0, 2).map(s => `<span class="topic-tag-mini">${s}</span>`).join('')}
+                  ${skillsList.length > 2 ? `<span class="topic-tag-mini text-muted">+${skillsList.length - 2}</span>` : ''}
                 </div>
 
-                <div style="margin-bottom: var(--space-4);">
-                  <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <div class="track-progress-section">
+                  <div class="track-progress-labels">
                     <span class="text-muted">Lessons: ${completedCount}/${lessonsTotal}</span>
-                    <span style="font-family: var(--font-mono); font-weight: 600; color: ${isPassed ? 'var(--success)' : (progressPct === 100 ? 'var(--warning)' : 'var(--text-muted)')};">
-                      ${isPassed ? `Completed (${bestScore}%)` : (progressPct === 100 ? 'Assessment Ready' : `${progressPct}% Progress`)}
+                    <span class="track-progress-val" style="color: ${isPassed ? 'var(--success)' : (progressPct === 100 ? 'var(--warning)' : 'var(--text-muted)')};">
+                      ${isPassed ? `Completed (${bestScore}%)` : (progressPct === 100 ? 'Ready' : `${progressPct}%`)}
                     </span>
                   </div>
-                  <div class="progress-bar-track">
+                  <div class="progress-bar-track" style="height: 5px; margin-top: 4px;">
                     <div class="progress-bar-fill ${isPassed ? 'progress-bar-cyan' : ''}" style="width: ${isPassed ? '100%' : `${progressPct}%`};"></div>
                   </div>
                 </div>
               </div>
 
-              <div style="padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                <span class="text-small ${isPassed ? 'text-success' : 'text-warning'}" style="font-size: 11.5px;">
+              <div class="track-card-footer" onclick="event.stopPropagation()">
+                <span class="track-status ${isPassed ? 'text-success' : 'text-warning'}" style="font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${isPassed ? '✓ Verified Certificate Earned' : 'Requires ≥ 80% Final Assessment'}">
                   ${isPassed ? '✓ Verified Certificate Earned' : 'Requires ≥ 80% Final Assessment'}
                 </span>
-                <div style="display: flex; gap: 6px;">
+                <div style="display: flex; gap: 5px; flex-shrink: 0;">
                   ${isPassed ? `
-                    <button class="btn btn-secondary btn-sm" onclick="openCourse('${cId}')">
-                      Review →
+                    <button class="btn btn-secondary btn-sm" onclick="openCourse('${cId}')" style="padding: 4px 8px; font-size: 11.5px;">
+                      Review
                     </button>
-                    <button class="btn btn-primary btn-sm" onclick="viewCertificate('${cId}')">
-                      Certificate 🏅
+                    <button class="btn btn-primary btn-sm" onclick="viewCertificate('${cId}')" style="padding: 4px 8px; font-size: 11.5px;" title="View Certificate">
+                      🏅 Cert
                     </button>
                   ` : `
-                    <button class="btn btn-primary btn-sm" onclick="openCourse('${cId}')">
-                      Continue Course →
+                    <button class="btn btn-primary btn-sm" onclick="openCourse('${cId}')" style="padding: 4px 10px; font-size: 11.5px;">
+                      Continue →
                     </button>
                   `}
                 </div>

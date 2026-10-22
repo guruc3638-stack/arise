@@ -65,7 +65,7 @@ async def download_study_file(
     return Response(
         content=content,
         media_type=meta.mime_type,
-        headers={"Content-Disposition": f'attachment; filename="{meta.original_filename}"'},
+        headers={"Content-Disposition": f'inline; filename="{meta.original_filename}"'},
     )
 
 
