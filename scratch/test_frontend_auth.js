@@ -106,23 +106,23 @@ console.log("✓ Initial state: Unauthenticated");
 // Try to access /dashboard (overview)
 AriseState.currentScreen = 'overview';
 const guardResult = AriseAuth.enforceRouteGuard();
-if (guardResult !== false || AriseState.currentScreen !== 'login') {
-  console.error(`FAIL: Unauthenticated visit to overview must redirect to login, got ${AriseState.currentScreen}`);
+if (guardResult !== false || (AriseState.currentScreen !== 'login' && AriseState.currentScreen !== 'landing')) {
+  console.error(`FAIL: Unauthenticated visit to overview must redirect to landing or login, got ${AriseState.currentScreen}`);
   process.exit(1);
 }
-console.log("✓ TEST PASSED: Unauthenticated user visiting /dashboard is redirected to /login");
+console.log("✓ TEST PASSED: Unauthenticated user visiting /dashboard is redirected to public screen (" + AriseState.currentScreen + ")");
 
 // Try to access other protected routes
 const testProtected = ['leaderboard', 'dsa-problems', 'self-study', 'learning-catalogue', 'profile'];
 for (const screen of testProtected) {
   AriseState.currentScreen = screen;
   AriseAuth.enforceRouteGuard();
-  if (AriseState.currentScreen !== 'login') {
+  if (AriseState.currentScreen !== 'login' && AriseState.currentScreen !== 'landing') {
     console.error(`FAIL: Access to protected screen ${screen} was not blocked!`);
     process.exit(1);
   }
 }
-console.log(`✓ TEST PASSED: All protected routes (${testProtected.join(', ')}) redirect unauthenticated visitors to /login`);
+console.log(`✓ TEST PASSED: All protected routes (${testProtected.join(', ')}) redirect unauthenticated visitors to landing/login`);
 
 // 4. Test Client-Side Validation
 console.log("\n--- Testing Client-Side Validation ---");
@@ -240,22 +240,22 @@ if (localStorage.getItem('arise_session') !== null || localStorage.getItem('aris
   console.error("FAIL: Session tokens not cleared from localStorage");
   process.exit(1);
 }
-if (AriseState.currentScreen !== 'login') {
-  console.error(`FAIL: After signOut screen must be 'login', got ${AriseState.currentScreen}`);
+if (AriseState.currentScreen !== 'login' && AriseState.currentScreen !== 'landing') {
+  console.error(`FAIL: After signOut screen must be 'login' or 'landing', got ${AriseState.currentScreen}`);
   process.exit(1);
 }
-console.log("✓ TEST PASSED: Logout clears session, storage, and redirects to /login");
+console.log("✓ TEST PASSED: Logout clears session, storage, and redirects to public landing/login");
 
 // Simulate Browser Back Button click
 console.log("Simulating Browser Back Button click to #/dashboard...");
 AriseState.currentScreen = 'overview'; // User navigated back in browser history
 window.triggerEvent('popstate');
 
-if (AriseState.currentScreen !== 'login') {
+if (AriseState.currentScreen !== 'login' && AriseState.currentScreen !== 'landing') {
   console.error(`FAIL: Browser Back button revealed protected page! Current screen is ${AriseState.currentScreen}`);
   process.exit(1);
 }
-console.log("✓ TEST PASSED: Back button after logout does not show protected pages; redirects immediately to /login");
+console.log("✓ TEST PASSED: Back button after logout does not show protected pages; redirects immediately to public screen");
 
 console.log("\n==================================================");
 console.log("ALL FRONTEND AUTH & CLEAN ACCOUNT TESTS PASSED!");

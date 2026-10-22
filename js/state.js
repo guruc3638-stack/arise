@@ -440,11 +440,20 @@ const AriseState = {
     this.notify();
   },
 
-  apiBase: (typeof window !== 'undefined' && window.location && window.location.hostname === '127.0.0.1')
-    ? 'http://127.0.0.1:8000/api/v1'
-    : (typeof window !== 'undefined' && window.location && window.location.hostname && window.location.hostname !== 'localhost')
-      ? `http://${window.location.hostname}:8000/api/v1`
-      : 'http://localhost:8000/api/v1',
+  apiBase: (function() {
+    if (typeof window === 'undefined' || !window.location) return 'http://localhost:8000/api/v1';
+    if (window.ARISE_API_URL) return window.ARISE_API_URL.replace(/\/+$/, '');
+    try {
+      const stored = localStorage.getItem('arise_api_url');
+      if (stored) return stored.replace(/\/+$/, '');
+    } catch (_) {}
+    const host = window.location.hostname;
+    if (!host || host === 'localhost' || host === '127.0.0.1') {
+      return `http://${host || 'localhost'}:8000/api/v1`;
+    }
+    // Remote / Vercel deployment: relative /api/v1 routes to serverless functions or proxy
+    return '/api/v1';
+  })(),
   authToken: typeof localStorage !== 'undefined' ? (localStorage.getItem('arise_token') || null) : null,
 
   async apiRequest(path, method = 'GET', body = null) {
@@ -461,18 +470,22 @@ const AriseState = {
         body: body ? JSON.stringify(body) : null
       });
     } catch (fetchErr) {
-      const altBase = this.apiBase.includes('localhost')
-        ? this.apiBase.replace('localhost', '127.0.0.1')
-        : this.apiBase.replace('127.0.0.1', 'localhost');
-      try {
-        res = await fetch(`${altBase}${path}`, {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : null
-        });
-        this.apiBase = altBase;
-      } catch (err2) {
-        throw new Error("Unable to connect to ARISE backend server (port 8000). Please ensure backend is running.");
+      if (typeof this.apiBase === 'string' && this.apiBase.includes(':8000')) {
+        const altBase = this.apiBase.includes('localhost')
+          ? this.apiBase.replace('localhost', '127.0.0.1')
+          : this.apiBase.replace('127.0.0.1', 'localhost');
+        try {
+          res = await fetch(`${altBase}${path}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null
+          });
+          this.apiBase = altBase;
+        } catch (err2) {
+          throw new Error("Unable to connect to ARISE backend server (port 8000). Please ensure backend is running.");
+        }
+      } else {
+        throw new Error("Unable to connect to ARISE API endpoint.");
       }
     }
     

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "serve -p 3000 .",
     "start": "serve -p 3000 .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "echo 'ARISE static assets ready for deployment'"
   },
   "keywords": [],
   "author": "",
