@@ -200,20 +200,34 @@ const AriseAuth = {
       // If user has 0 XP, enforce clean empty state collections
       if (verifiedXp === 0) {
         ARISE_DATA.currentUser.recentSolves = [];
-        // Personal topic progress starts clean at 0 solved
-        if (Array.isArray(ARISE_DATA.topics)) {
-          ARISE_DATA.topics.forEach(t => {
-            t.userSolved = 0;
-            t.solved = 0;
-          });
+        if (typeof resetAllTopicSolves === 'function') {
+          resetAllTopicSolves();
+        } else {
+          if (Array.isArray(ARISE_DATA.topics)) {
+            ARISE_DATA.topics.forEach(t => {
+              t.userSolved = 0;
+              t.solved = 0;
+            });
+          }
+          if (Array.isArray(ARISE_DATA.problems)) {
+            ARISE_DATA.problems.forEach(p => {
+              p.status = 'Unsolved';
+            });
+          }
         }
-        if (Array.isArray(ARISE_DATA.problems)) {
-          ARISE_DATA.problems.forEach(p => {
-            p.status = 'Unsolved';
-          });
+        if (typeof syncLeaderboardWithUser === 'function') {
+          syncLeaderboardWithUser(ARISE_DATA.currentUser);
         }
-      } else if (typeof AriseState !== 'undefined' && typeof AriseState.syncPracticeStats === 'function') {
-        AriseState.syncPracticeStats().catch(() => {});
+      } else {
+        if (typeof syncProblemStatuses === 'function') {
+          syncProblemStatuses();
+        }
+        if (typeof syncLeaderboardWithUser === 'function') {
+          syncLeaderboardWithUser(ARISE_DATA.currentUser);
+        }
+        if (typeof AriseState !== 'undefined' && typeof AriseState.syncPracticeStats === 'function') {
+          AriseState.syncPracticeStats().catch(() => {});
+        }
       }
 
       if (typeof AriseState !== 'undefined') {

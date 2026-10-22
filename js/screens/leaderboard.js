@@ -17,9 +17,15 @@ function escapeHtml(str) {
 }
 
 function renderLeaderboardScreen() {
+  if (typeof syncProblemStatuses === 'function') {
+    syncProblemStatuses();
+  }
   const isFriendsTab = AriseState.leaderboardTab === 'friends';
   const scope = AriseState.leaderboardScope || 'maharashtra';
   const user = ARISE_DATA.currentUser;
+  if (typeof syncLeaderboardWithUser === 'function') {
+    syncLeaderboardWithUser(user);
+  }
 
   // Trigger data fetching if authenticated and data not yet present
   if (typeof AriseState !== 'undefined' && AriseState.authToken) {

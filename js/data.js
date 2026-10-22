@@ -2100,7 +2100,7 @@ const ARISE_DATA = {
       { rank: 1, name: "Aarav Sharma", uid: "AR-XYZ999", college: "COEP Technological University", xp: 10540, mv: "—", solved: 148, isCurrentUser: false, avatar: "AS" },
       { rank: 2, name: "Prathamesh Sawant", college: "COEP Technological University", xp: 4890, mv: "+1", solved: 64, isCurrentUser: false, avatar: "PS" },
       { rank: 3, name: "Shreya Kulkarni", college: "COEP Technological University", xp: 4120, mv: "—", solved: 58, isCurrentUser: false, avatar: "SK" },
-      { rank: 4, name: "Rohan Deshmukh", college: "COEP Technological University", xp: 3420, mv: "+2", solved: 48, isCurrentUser: false, avatar: "RD" },
+      { rank: 4, name: "Rajesh Deshmukh", college: "COEP Technological University", xp: 3420, mv: "+2", solved: 48, isCurrentUser: false, avatar: "RD" },
       { rank: 5, name: "Varun Jadhav", college: "COEP Technological University", xp: 3100, mv: "-1", solved: 43, isCurrentUser: false, avatar: "VJ" },
       { rank: 6, name: "Aniket More", college: "COEP Technological University", xp: 2850, mv: "—", solved: 39, isCurrentUser: false, avatar: "AM" }
     ],
@@ -2110,7 +2110,7 @@ const ARISE_DATA = {
       { rank: 3, name: "Devansh Joshi", college: "MIT World Peace University", xp: 5810, mv: "—", solved: 76, isCurrentUser: false, avatar: "DJ" },
       { rank: 4, name: "Prathamesh Sawant", college: "COEP Tech University", xp: 4890, mv: "-1", solved: 64, isCurrentUser: false, avatar: "PS" },
       { rank: 5, name: "Shreya Kulkarni", college: "COEP Tech University", xp: 4120, mv: "—", solved: 58, isCurrentUser: false, avatar: "SK" },
-      { rank: 6, name: "Rohan Deshmukh", college: "COEP Tech University", xp: 3420, mv: "+2", solved: 48, isCurrentUser: false, avatar: "RD" }
+      { rank: 6, name: "Rajesh Deshmukh", college: "COEP Tech University", xp: 3420, mv: "+2", solved: 48, isCurrentUser: false, avatar: "RD" }
     ],
     maharashtra: [
       { rank: 1, name: "Aarav Sharma", uid: "AR-XYZ999", college: "COEP Technological University", xp: 10540, mv: "—", solved: 148, isCurrentUser: false, avatar: "AS" },
@@ -2120,7 +2120,7 @@ const ARISE_DATA = {
       { rank: 5, name: "Devansh Joshi", college: "MIT World Peace University", xp: 5810, mv: "—", solved: 76, isCurrentUser: false, avatar: "DJ" },
       { rank: 6, name: "Prathamesh Sawant", college: "COEP Tech University", xp: 4890, mv: "-1", solved: 64, isCurrentUser: false, avatar: "PS" },
       { rank: 7, name: "Sneha Kulkarni", college: "VJTI Mumbai", xp: 3890, mv: "+3", solved: 54, isCurrentUser: false, avatar: "SK" },
-      { rank: 8, name: "Rohan Deshmukh", college: "COEP Tech University", xp: 3420, mv: "+2", solved: 48, isCurrentUser: false, avatar: "RD" }
+      { rank: 8, name: "Rajesh Deshmukh", college: "COEP Tech University", xp: 3420, mv: "+2", solved: 48, isCurrentUser: false, avatar: "RD" }
     ],
     india: [
       { rank: 1, name: "Kabir Sen", college: "IIT Delhi", xp: 14200, mv: "—", solved: 198, isCurrentUser: false, avatar: "KS" },
@@ -4364,15 +4364,180 @@ function resetAllTopicSolves() {
       p.status = 'Unsolved';
     });
   }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('arise_solved_problem_ids');
+      localStorage.removeItem('arise_attempted_problem_ids');
+    }
+  } catch (_) {}
+}
+
+// Synchronizes problem status with user's verified solves & localStorage
+function syncProblemStatuses() {
+  if (typeof ARISE_DATA === 'undefined' || !Array.isArray(ARISE_DATA.problems)) return;
+
+  const user = ARISE_DATA.currentUser;
+  let savedSolved = [];
+  let savedAttempted = [];
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      savedSolved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
+      savedAttempted = JSON.parse(localStorage.getItem('arise_attempted_problem_ids') || '[]');
+    }
+  } catch (_) {}
+
+  // 1. If user has recentSolves or problems_solved list
+  if (user && Array.isArray(user.recentSolves)) {
+    user.recentSolves.forEach(r => {
+      if (r && r.id && !savedSolved.includes(r.id)) {
+        savedSolved.push(r.id);
+      }
+    });
+  }
+
+  // 2. If user is seeded top student (Aarav Sharma AR-XYZ999 with 148 solves / 10,540 XP)
+  const isTopRanker = user && (user.uid === 'AR-XYZ999' || user.email === 'xyz@gmail.com' || (user.verifiedXp && user.verifiedXp >= 10000));
+  if (isTopRanker) {
+    savedSolved = ARISE_DATA.problems.map(p => p.id);
+  } else if (user && user.verifiedXp > 0 && savedSolved.length === 0) {
+    // If user has verified XP from an account session but problem IDs weren't explicitly cached,
+    // match their XP to problem counts so their catalogue shows their genuine progress
+    let runningXp = 0;
+    for (const prob of ARISE_DATA.problems) {
+      if (runningXp + (prob.verifiedXp || 40) <= user.verifiedXp + 20) {
+        savedSolved.push(prob.id);
+        runningXp += (prob.verifiedXp || 40);
+      } else {
+        break;
+      }
+    }
+  }
+
+  // 3. Apply statuses to every problem
+  ARISE_DATA.problems.forEach(p => {
+    if (savedSolved.includes(p.id)) {
+      p.status = 'Solved';
+    } else if (savedAttempted.includes(p.id)) {
+      p.status = 'Attempted';
+    } else {
+      p.status = 'Unsolved';
+    }
+  });
+
+  // 4. Update user solved stats to match the solved problems count
+  if (user && user.solvedStats) {
+    if (!user.verifiedXp || user.verifiedXp === 0) {
+      user.solvedStats.total = 0;
+      user.solvedStats.easy = 0;
+      user.solvedStats.medium = 0;
+      user.solvedStats.hard = 0;
+    } else {
+      const solvedProbs = ARISE_DATA.problems.filter(p => p.status === 'Solved');
+      const totalCount = Math.max(user.solvedStats.total || 0, solvedProbs.length);
+      user.solvedStats.total = totalCount;
+      user.solvedStats.easy = solvedProbs.filter(p => p.difficulty === 'Easy').length;
+      user.solvedStats.medium = solvedProbs.filter(p => p.difficulty === 'Medium').length;
+      user.solvedStats.hard = solvedProbs.filter(p => p.difficulty === 'Hard').length;
+    }
+  }
+
+  // 5. Update topic mastery counts
+  if (Array.isArray(ARISE_DATA.topics)) {
+    ARISE_DATA.topics.forEach(t => {
+      const tName = (t.name || '').trim().toLowerCase();
+      const tId = (t.id || '').trim().toLowerCase();
+      const count = ARISE_DATA.problems.filter(p => {
+        const pTopic = (p.topic || '').trim().toLowerCase();
+        return (pTopic === tName || pTopic === tId || (tId.length > 2 && pTopic.includes(tId))) && p.status === 'Solved';
+      }).length;
+      t.userSolved = count;
+      t.solved = count;
+    });
+  }
+
+  // 6. Ensure localStorage is in sync
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('arise_solved_problem_ids', JSON.stringify(savedSolved));
+    }
+  } catch (_) {}
+}
+
+function syncLeaderboardWithUser(user) {
+  if (!user || typeof ARISE_DATA === 'undefined' || !ARISE_DATA.leaderboards) return;
+  const scopes = ['college', 'district', 'maharashtra', 'india'];
+  const userXp = Number(user.verifiedXp || 0);
+  const userSolved = Number((user.solvedStats && user.solvedStats.total) || 0);
+
+  scopes.forEach(scope => {
+    let list = ARISE_DATA.leaderboards[scope];
+    if (!Array.isArray(list)) return;
+
+    // Filter out previous current user instances
+    list = list.filter(item => !item.isCurrentUser && item.uid !== user.uid);
+
+    if (userXp > 0) {
+      list.push({
+        rank: 0,
+        name: user.displayName || "You",
+        uid: user.uid,
+        college: user.college || "Your Institution",
+        xp: userXp,
+        solved: userSolved,
+        isCurrentUser: true,
+        mv: "+1",
+        avatar: (user.displayName || "YO").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
+      });
+
+      // Sort strictly by verified DSA XP descending
+      list.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+
+      // Reassign ranks
+      list.forEach((item, index) => {
+        item.rank = index + 1;
+        if (item.isCurrentUser || item.uid === user.uid) {
+          if (!user.rank) user.rank = {};
+          user.rank[scope] = index + 1;
+        }
+      });
+
+      ARISE_DATA.leaderboards[scope] = list;
+    }
+  });
+
+  if (userXp > 0 && user.rank && user.rank.maharashtra) {
+    user.rankDisplay = `#${user.rank.maharashtra}`;
+  } else if (userXp === 0) {
+    user.rankDisplay = "Unranked";
+    if (user.rank) {
+      user.rank.college = null;
+      user.rank.district = null;
+      user.rank.maharashtra = null;
+      user.rank.india = null;
+    }
+  }
+}
+
+// Initial sync
+syncProblemStatuses();
+if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
+  syncLeaderboardWithUser(ARISE_DATA.currentUser);
 }
 
 if (typeof window !== 'undefined') {
+  window.ARISE_DATA = ARISE_DATA;
   window.getTopicSolvedCount = getTopicSolvedCount;
   window.updateTopicOnSolved = updateTopicOnSolved;
   window.resetAllTopicSolves = resetAllTopicSolves;
+  window.syncProblemStatuses = syncProblemStatuses;
+  window.syncLeaderboardWithUser = syncLeaderboardWithUser;
 }
 if (typeof globalThis !== 'undefined') {
+  globalThis.ARISE_DATA = ARISE_DATA;
   globalThis.getTopicSolvedCount = getTopicSolvedCount;
   globalThis.updateTopicOnSolved = updateTopicOnSolved;
   globalThis.resetAllTopicSolves = resetAllTopicSolves;
+  globalThis.syncProblemStatuses = syncProblemStatuses;
+  globalThis.syncLeaderboardWithUser = syncLeaderboardWithUser;
 }

@@ -4,7 +4,13 @@
    ========================================================================== */
 
 function renderOverviewDashboard() {
+  if (typeof syncProblemStatuses === 'function') {
+    syncProblemStatuses();
+  }
   const user = ARISE_DATA.currentUser;
+  if (typeof syncLeaderboardWithUser === 'function') {
+    syncLeaderboardWithUser(user);
+  }
   const currentScope = AriseState.leaderboardScope || 'maharashtra';
   const isCleanAccount = (!user.verifiedXp || user.verifiedXp === 0);
   const currentRankDisplay = (isCleanAccount || !user.rank || !user.rank[currentScope]) ? "Unranked" : `#${user.rank[currentScope]}`;
@@ -22,12 +28,18 @@ function renderOverviewDashboard() {
     })
     .slice(0, 5);
 
-  const recentSolves = isCleanAccount ? [] : (user.recentSolves || [
-    { id: "ARISE-P101", title: "Pairwise Sensor Target Calibration", difficulty: "Easy", topic: "Arrays", time: "Today, 14:20", xp: 40 },
-    { id: "ARISE-P102", title: "Valid Packet Frame Delimiters", difficulty: "Easy", topic: "Stacks", time: "Yesterday", xp: 40 },
-    { id: "ARISE-P201", title: "Tri-Sensor Equilibrium Calibration", difficulty: "Medium", topic: "Arrays", time: "2 days ago", xp: 80 },
-    { id: "ARISE-P203", title: "Hydro-Reservoir Capacity Optimizer", difficulty: "Medium", topic: "Arrays", time: "4 days ago", xp: 85 }
-  ]);
+  const recentSolves = isCleanAccount ? [] : (
+    (user.recentSolves && user.recentSolves.length > 0)
+      ? user.recentSolves
+      : (ARISE_DATA.problems || []).filter(p => p.status === 'Solved').map(p => ({
+          id: p.id,
+          title: p.title,
+          difficulty: p.difficulty,
+          topic: p.topic,
+          time: 'Recently',
+          xp: p.verifiedXp || 40
+        }))
+  );
 
   const allBadges = (AriseState.badgesList && AriseState.badgesList.length > 0)
     ? AriseState.badgesList

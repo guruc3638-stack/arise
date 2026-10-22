@@ -581,6 +581,19 @@ const AriseState = {
             t.solved = count;
           });
         }
+        // Persist solved problems to localStorage and sync leaderboards
+        try {
+          if (typeof localStorage !== 'undefined' && stats.problems_solved && stats.problems_solved.length > 0) {
+            let saved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
+            stats.problems_solved.forEach(id => {
+              if (!saved.includes(id)) saved.push(id);
+            });
+            localStorage.setItem('arise_solved_problem_ids', JSON.stringify(saved));
+          }
+        } catch (_) {}
+        if (typeof syncLeaderboardWithUser === 'function') {
+          syncLeaderboardWithUser(ARISE_DATA.currentUser);
+        }
       }
       this.notify();
       return stats;

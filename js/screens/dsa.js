@@ -100,6 +100,9 @@ function selectDsaTopic(topicName) {
 // Tabs: All, Easy, Medium, Hard (with counts) + Filters by Topic, Status & Search
 // --------------------------------------------------------------------------
 function renderDsaProblemList() {
+  if (typeof syncProblemStatuses === 'function') {
+    syncProblemStatuses();
+  }
   const allProblems = ARISE_DATA.problems;
 
   // Real-time counts
@@ -1478,6 +1481,20 @@ function handleJudgeEvaluationResult(result, p, lang) {
     p.status = 'Solved';
 
     if (!alreadySolved) {
+      // 1. Persist solve to localStorage immediately
+      try {
+        if (typeof localStorage !== 'undefined') {
+          let saved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
+          if (!saved.includes(p.id)) {
+            saved.push(p.id);
+            localStorage.setItem('arise_solved_problem_ids', JSON.stringify(saved));
+          }
+          let attempted = JSON.parse(localStorage.getItem('arise_attempted_problem_ids') || '[]');
+          attempted = attempted.filter(id => id !== p.id);
+          localStorage.setItem('arise_attempted_problem_ids', JSON.stringify(attempted));
+        }
+      } catch (_) {}
+
       // Dynamically increment solved count for this topic
       if (typeof updateTopicOnSolved === 'function') {
         updateTopicOnSolved(p);
@@ -1520,8 +1537,10 @@ function handleJudgeEvaluationResult(result, p, lang) {
           });
         }
 
-        // If user was Unranked, assign rank and re-sync with profile
-        if (ARISE_DATA.currentUser.rankDisplay === 'Unranked' || !ARISE_DATA.currentUser.rank || !ARISE_DATA.currentUser.rank.maharashtra) {
+        // Dynamically update and re-rank current user on the official Leaderboard
+        if (typeof syncLeaderboardWithUser === 'function') {
+          syncLeaderboardWithUser(ARISE_DATA.currentUser);
+        } else if (ARISE_DATA.currentUser.rankDisplay === 'Unranked' || !ARISE_DATA.currentUser.rank || !ARISE_DATA.currentUser.rank.maharashtra) {
           ARISE_DATA.currentUser.rank = {
             college: 3,
             district: 8,
@@ -1529,9 +1548,10 @@ function handleJudgeEvaluationResult(result, p, lang) {
             india: 86
           };
           ARISE_DATA.currentUser.rankDisplay = '#14';
-          if (typeof AriseAuth !== 'undefined') {
-            AriseAuth.syncProfileWithBackend().catch(() => {});
-          }
+        }
+
+        if (typeof AriseAuth !== 'undefined') {
+          AriseAuth.syncProfileWithBackend().catch(() => {});
         }
         // Add verified solve notification and milestone notifications
         if (typeof AriseState !== 'undefined' && typeof AriseState.addNotification === 'function') {
@@ -1593,7 +1613,21 @@ function handleJudgeEvaluationResult(result, p, lang) {
       showToast('Accepted! Practice recorded (0 additional XP per one-time XP rule).', 'info');
     }
   } else {
-    if (p.status !== 'Solved') p.status = 'Attempted';
+    if (p.status !== 'Solved') {
+      p.status = 'Attempted';
+      try {
+        if (typeof localStorage !== 'undefined') {
+          let saved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
+          if (!saved.includes(p.id)) {
+            let attempted = JSON.parse(localStorage.getItem('arise_attempted_problem_ids') || '[]');
+            if (!attempted.includes(p.id)) {
+              attempted.push(p.id);
+              localStorage.setItem('arise_attempted_problem_ids', JSON.stringify(attempted));
+            }
+          }
+        }
+      } catch (_) {}
+    }
     if (result.status === 'wa') {
       showToast(`Submission Rejected: Wrong Answer on Test Case ${result.testCaseIndex || 1}. 0 XP awarded.`, 'error');
     } else if (result.status === 'ce') {
