@@ -26,14 +26,103 @@ function renderSelfStudyScreen() {
 }
 
 // --------------------------------------------------------------------------
-// SCREEN M: SELF STUDY LIBRARY
+// SCREEN M: SELF STUDY LIBRARY WITH DAILY TIME TRACKING & HABIT LOG
 // --------------------------------------------------------------------------
+function getStudyTimeMetrics() {
+  let summary = (typeof AriseState !== 'undefined' && AriseState.studySummary) ? AriseState.studySummary : null;
+  let localSessions = [];
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localSessions = JSON.parse(localStorage.getItem('arise_study_sessions') || '[]');
+      if (!summary) {
+        summary = JSON.parse(localStorage.getItem('arise_study_summary') || 'null');
+      }
+    }
+  } catch (_) {}
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const localTodaySecs = localSessions.filter(s => s.dateStr === todayStr).reduce((acc, s) => acc + (s.durationSeconds || 0), 0);
+  const localTotalSecs = localSessions.reduce((acc, s) => acc + (s.durationSeconds || 0), 0);
+
+  const totalSecs = Math.max((summary && summary.total_seconds) || 0, localTotalSecs);
+  const todaySecs = Math.max((summary && summary.today_seconds) || 0, localTodaySecs);
+  const sessionCount = Math.max((summary && summary.session_count) || 0, localSessions.length);
+
+  // Calculate streak from dates
+  const datesWithStudy = new Set(localSessions.map(s => s.dateStr).filter(Boolean));
+  let streak = 0;
+  let curr = new Date();
+  let checkDateStr = curr.toISOString().slice(0, 10);
+  if (!datesWithStudy.has(checkDateStr)) {
+    curr.setDate(curr.getDate() - 1);
+    checkDateStr = curr.toISOString().slice(0, 10);
+  }
+  while (datesWithStudy.has(checkDateStr)) {
+    streak++;
+    curr.setDate(curr.getDate() - 1);
+    checkDateStr = curr.toISOString().slice(0, 10);
+  }
+  streak = Math.max(streak, (summary && summary.daily_streak) || 0, todaySecs > 0 ? 1 : 0);
+
+  const totalHours = Number((totalSecs / 3600).toFixed(1));
+  const todayHours = Number((todaySecs / 3600).toFixed(1));
+  const todayMins = Math.round(todaySecs / 60);
+
+  return {
+    totalSecs,
+    totalHours,
+    todaySecs,
+    todayHours,
+    todayMins,
+    todayDisplay: todayMins >= 60 ? `${todayHours} hrs` : `${todayMins} mins`,
+    sessionCount,
+    dailyStreak: streak,
+    localSessions
+  };
+}
+
+function getDailyStudyHistory() {
+  let sessions = [];
+  try {
+    if (typeof localStorage !== 'undefined') {
+      sessions = JSON.parse(localStorage.getItem('arise_study_sessions') || '[]');
+    }
+  } catch (_) {}
+
+  const days = [];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const today = new Date();
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const isToday = (i === 0);
+    const dayLabel = isToday ? 'Today' : (i === 1 ? 'Yest' : dayNames[d.getDay()]);
+    const daySessions = sessions.filter(s => s.dateStr === dateStr);
+    const daySecs = daySessions.reduce((acc, s) => acc + (s.durationSeconds || 0), 0);
+    const dayMins = Math.round(daySecs / 60);
+
+    days.push({
+      dateStr,
+      dayLabel,
+      dayNumber: d.getDate(),
+      monthName: d.toLocaleString('en-US', { month: 'short' }),
+      isToday,
+      minutes: dayMins,
+      hasStudy: dayMins > 0
+    });
+  }
+  return days;
+}
+
 function renderSelfStudyLibrary() {
   const docs = (AriseState.studyFiles && AriseState.studyFiles.length > 0)
     ? AriseState.studyFiles
     : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.studyLibrary) ? ARISE_DATA.studyLibrary : []);
 
-  const summary = AriseState.studySummary || { total_hours: 0.0, session_count: 0, total_minutes: 0 };
+  const metrics = getStudyTimeMetrics();
+  const dailyHistory = getDailyStudyHistory();
   const hasFiles = docs.length > 0;
 
   return `
@@ -48,7 +137,7 @@ function renderSelfStudyLibrary() {
             </span>
           </div>
           <p class="text-small text-muted" style="margin-top: 4px;">
-            Read personal academic papers, algorithm proofs, and reference PDFs. <b>Note:</b> Study time never awards DSA XP.
+            Read personal academic papers, algorithm proofs, and reference PDFs. <b>Note:</b> Study time updates daily and never awards DSA XP.
           </p>
         </div>
 
@@ -60,23 +149,45 @@ function renderSelfStudyLibrary() {
         </div>
       </div>
 
-      <!-- Study Stats & Integrity Rule Strip -->
+      <!-- Study Stats & Daily Tracking Strip -->
       <div class="glass-card" style="padding: var(--space-4) var(--space-6); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4);">
         <div style="display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap;">
+          <!-- Cumulative Study Time -->
           <div>
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Cumulative Study Time</div>
             <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: #FFFFFF;">
-              ${(summary.total_hours || 0).toFixed(1)} <span style="font-size: 13px; color: var(--text-muted);">hours</span>
+              ${metrics.totalHours.toFixed(1)} <span style="font-size: 13px; color: var(--text-muted);">hours</span>
             </div>
           </div>
           <div style="width: 1px; height: 32px; background: var(--border-subtle);"></div>
+          <!-- Today's Study Time (Daily) -->
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--accent-cyan); font-weight: 600; display: flex; align-items: center; gap: 4px;">
+              <span>Today's Study Time</span>
+              <span class="badge" style="font-size: 9px; padding: 1px 4px; background: rgba(34,211,238,0.15); color: var(--accent-cyan);">DAILY</span>
+            </div>
+            <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: var(--accent-cyan);">
+              ${metrics.todayDisplay}
+            </div>
+          </div>
+          <div style="width: 1px; height: 32px; background: var(--border-subtle);"></div>
+          <!-- Daily Study Streak -->
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: #F59E0B; font-weight: 600;">Study Streak</div>
+            <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: #F59E0B;">
+              ${metrics.dailyStreak} <span style="font-size: 13px; color: var(--text-muted);">${metrics.dailyStreak === 1 ? 'day' : 'days'}</span>
+            </div>
+          </div>
+          <div style="width: 1px; height: 32px; background: var(--border-subtle);"></div>
+          <!-- Logged Sessions -->
           <div>
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Logged Sessions</div>
             <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: #FFFFFF;">
-              ${summary.session_count || 0}
+              ${metrics.sessionCount}
             </div>
           </div>
           <div style="width: 1px; height: 32px; background: var(--border-subtle);"></div>
+          <!-- Uploaded PDFs -->
           <div>
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Uploaded PDFs</div>
             <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: var(--accent-cyan);">
@@ -87,6 +198,28 @@ function renderSelfStudyLibrary() {
 
         <div style="font-size: 11.5px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-cyan);">
           <b>Rule 7:</b> Study sessions strictly award 0 XP. Rankings reflect judge-verified code submissions only.
+        </div>
+      </div>
+
+      <!-- Daily Habit Tracking & Quick Log Action Strip -->
+      <div class="surface-opaque" style="padding: 12px 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span style="font-size: 12.5px; font-weight: 600; color: var(--text-primary);">📅 Past 7 Days Activity:</span>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            ${dailyHistory.map(day => `
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 10px; border-radius: var(--radius-sm); background: ${day.isToday ? 'rgba(34,211,238,0.12)' : (day.hasStudy ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)')}; border: 1px solid ${day.isToday ? 'rgba(34,211,238,0.4)' : (day.hasStudy ? 'rgba(255,255,255,0.1)' : 'var(--border-subtle)')};">
+                <span style="font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: ${day.isToday ? 'var(--accent-cyan)' : 'var(--text-muted)'}; font-weight: 700;">${day.dayLabel}</span>
+                <span class="font-mono" style="font-size: 11.5px; font-weight: 700; color: ${day.hasStudy ? '#FFFFFF' : 'var(--text-muted)'};">${day.minutes > 0 ? `${day.minutes}m` : '0m'}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 11.5px; color: var(--text-muted);">Quick Log Offline Study:</span>
+          <button class="btn btn-secondary btn-sm" onclick="quickLogStudyMinutes(15)" style="font-size: 11px; padding: 3px 8px;" title="Add 15 minutes to today's study log">+15m</button>
+          <button class="btn btn-secondary btn-sm" onclick="quickLogStudyMinutes(30)" style="font-size: 11px; padding: 3px 8px;" title="Add 30 minutes to today's study log">+30m</button>
+          <button class="btn btn-secondary btn-sm" onclick="quickLogStudyMinutes(60)" style="font-size: 11px; padding: 3px 8px;" title="Add 1 hour to today's study log">+1h</button>
         </div>
       </div>
 
@@ -539,7 +672,7 @@ function renderPdfReaderScreen() {
       <div style="display: flex; justify-content: space-between; align-items: center; background: #0E1424; padding: 10px 18px; border-radius: var(--radius-md); border: 1px solid var(--border-default); flex-wrap: wrap; gap: 12px;">
         <!-- Left: Back Button & Title -->
         <div style="display: flex; align-items: center; gap: 12px; min-width: 260px;">
-          <button class="btn btn-ghost btn-sm" onclick="AriseState.setScreen('self-study')" style="font-weight: 600;">
+          <button class="btn btn-ghost btn-sm" onclick="closeAndSaveStudySession()" style="font-weight: 600;">
             ← Back to Library
           </button>
           <span style="color: var(--border-strong);">|</span>
@@ -706,6 +839,7 @@ async function finishStudySession() {
     AriseState.timerRunning = false;
   }
 
+  const metrics = getStudyTimeMetrics();
   const docTitle = AriseState.activeDoc?.original_filename || AriseState.activeDoc?.title || 'Algorithmic Research Material';
 
   let modal = document.getElementById('session-summary-modal');
@@ -736,6 +870,21 @@ async function finishStudySession() {
           </div>
         </div>
 
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="padding: 10px 12px; border-radius: var(--radius-sm); background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.25);">
+            <div style="font-size: 10px; text-transform: uppercase; color: var(--accent-cyan); font-weight: 700;">Today's Total Study Time</div>
+            <div class="font-mono" style="font-size: 16px; font-weight: 700; color: #FFFFFF; margin-top: 2px;">
+              ${metrics.todayDisplay}
+            </div>
+          </div>
+          <div style="padding: 10px 12px; border-radius: var(--radius-sm); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);">
+            <div style="font-size: 10px; text-transform: uppercase; color: #F59E0B; font-weight: 700;">Active Daily Streak</div>
+            <div class="font-mono" style="font-size: 16px; font-weight: 700; color: #FFFFFF; margin-top: 2px;">
+              ${metrics.dailyStreak} ${metrics.dailyStreak === 1 ? 'Day' : 'Days'}
+            </div>
+          </div>
+        </div>
+
         <div style="padding: 12px; border-radius: var(--radius-md); background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.25); font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
           ℹ️ <b>ARISE Integrity Rule 7:</b> Study sessions do not award XP or affect your leaderboard rank. Verified XP is earned strictly by solving judge-confirmed DSA problems (Doc 08 T-09).
         </div>
@@ -747,6 +896,42 @@ async function finishStudySession() {
   `;
 
   modal.classList.add('open');
+}
+
+async function closeAndSaveStudySession() {
+  const secs = (typeof AriseState !== 'undefined' && AriseState.timerSeconds) || 0;
+  if (secs >= 5) {
+    if (typeof AriseState.finishStudySession === 'function') {
+      await AriseState.finishStudySession();
+    }
+    if (typeof showToast === 'function') {
+      const mins = Math.max(1, Math.round(secs / 60));
+      showToast(`⏱️ Study session logged: +${mins} min(s) added to today's study time.`, 'info');
+    }
+  } else {
+    if (typeof AriseState !== 'undefined') {
+      AriseState.timerRunning = false;
+      if (AriseState.timerInterval) {
+        clearInterval(AriseState.timerInterval);
+        AriseState.timerInterval = null;
+      }
+    }
+  }
+  if (typeof AriseState !== 'undefined') {
+    AriseState.setScreen('self-study');
+  }
+}
+
+async function quickLogStudyMinutes(mins) {
+  if (typeof AriseState !== 'undefined' && typeof AriseState.logManualStudyTime === 'function') {
+    await AriseState.logManualStudyTime(mins, `Self Study Session (${mins} mins)`);
+  }
+  if (typeof showToast === 'function') {
+    showToast(`⏱️ Successfully logged +${mins} minutes of study time for today!`, 'success');
+  }
+  if (typeof AriseState !== 'undefined' && typeof AriseState.notify === 'function') {
+    AriseState.notify();
+  }
 }
 
 function closeSessionSummaryModal() {
@@ -899,12 +1084,32 @@ async function submitStudyPdfUpload() {
 }
 
 // Window exposes for DOM events
-window.openDocumentReader = openDocumentReader;
-window.openUploadDocumentModal = openUploadDocumentModal;
-window.submitStudyPdfUpload = submitStudyPdfUpload;
-window.handleStudyFileSelected = handleStudyFileSelected;
-window.toggleStudyTimer = toggleStudyTimer;
-window.finishStudySession = finishStudySession;
-window.closeSessionSummaryModal = closeSessionSummaryModal;
-window.handleDeleteStudyFile = handleDeleteStudyFile;
+if (typeof window !== 'undefined') {
+  window.openDocumentReader = openDocumentReader;
+  window.openUploadDocumentModal = openUploadDocumentModal;
+  window.submitStudyPdfUpload = submitStudyPdfUpload;
+  window.handleStudyFileSelected = handleStudyFileSelected;
+  window.toggleStudyTimer = toggleStudyTimer;
+  window.finishStudySession = finishStudySession;
+  window.closeAndSaveStudySession = closeAndSaveStudySession;
+  window.quickLogStudyMinutes = quickLogStudyMinutes;
+  window.getStudyTimeMetrics = getStudyTimeMetrics;
+  window.getDailyStudyHistory = getDailyStudyHistory;
+  window.closeSessionSummaryModal = closeSessionSummaryModal;
+  window.handleDeleteStudyFile = handleDeleteStudyFile;
+}
+if (typeof globalThis !== 'undefined') {
+  globalThis.openDocumentReader = openDocumentReader;
+  globalThis.openUploadDocumentModal = openUploadDocumentModal;
+  globalThis.submitStudyPdfUpload = submitStudyPdfUpload;
+  globalThis.handleStudyFileSelected = handleStudyFileSelected;
+  globalThis.toggleStudyTimer = toggleStudyTimer;
+  globalThis.finishStudySession = finishStudySession;
+  globalThis.closeAndSaveStudySession = closeAndSaveStudySession;
+  globalThis.quickLogStudyMinutes = quickLogStudyMinutes;
+  globalThis.getStudyTimeMetrics = getStudyTimeMetrics;
+  globalThis.getDailyStudyHistory = getDailyStudyHistory;
+  globalThis.closeSessionSummaryModal = closeSessionSummaryModal;
+  globalThis.handleDeleteStudyFile = handleDeleteStudyFile;
+}
 

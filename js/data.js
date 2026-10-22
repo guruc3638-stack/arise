@@ -4320,19 +4320,23 @@ const ARISE_DATA = {
    ========================================================================== */
 function getTopicSolvedCount(topic) {
   if (!topic) return 0;
-  if (typeof topic.userSolved === 'number') {
-    return topic.userSolved;
-  }
   if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.problems)) {
     const topicNameLower = (topic.name || '').trim().toLowerCase();
     const topicIdLower = (topic.id || '').trim().toLowerCase();
     const count = ARISE_DATA.problems.filter(p => {
       const pTopic = (p.topic || '').trim().toLowerCase();
-      return (pTopic === topicNameLower || pTopic === topicIdLower || (topicIdLower.length > 2 && pTopic.includes(topicIdLower))) && p.status === 'Solved';
+      return (
+        pTopic === topicNameLower ||
+        pTopic === topicIdLower ||
+        (topicIdLower.length > 2 && pTopic.includes(topicIdLower)) ||
+        (topicNameLower.length > 2 && pTopic.includes(topicNameLower))
+      ) && p.status === 'Solved';
     }).length;
+    topic.userSolved = count;
+    topic.solved = count;
     return count;
   }
-  return topic.solved || 0;
+  return topic.userSolved !== undefined ? topic.userSolved : (topic.solved || 0);
 }
 
 function updateTopicOnSolved(problem) {

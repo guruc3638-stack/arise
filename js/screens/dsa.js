@@ -18,6 +18,9 @@ function renderDsaScreen() {
 // SCREEN I: DSA TOPIC EXPLORER (17 Curriculum Domains)
 // --------------------------------------------------------------------------
 function renderDsaTopicExplorer() {
+  if (typeof syncProblemStatuses === 'function') {
+    syncProblemStatuses();
+  }
   const topics = ARISE_DATA.topics;
 
   return `
@@ -55,7 +58,7 @@ function renderDsaTopicExplorer() {
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
                   <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">${t.name}</h3>
-                  <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: ${pct > 60 ? 'var(--accent-cyan)' : 'var(--text-secondary)'};">
+                  <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: ${solvedCount > 0 ? 'var(--accent-cyan)' : 'var(--text-secondary)'};">
                     ${pct}%
                   </span>
                 </div>
@@ -66,7 +69,7 @@ function renderDsaTopicExplorer() {
 
               <div>
                 <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                  <span class="text-muted">Solved: <b style="color: var(--text-primary); font-family: var(--font-mono);">${solvedCount}</b> / ${t.total}</span>
+                  <span class="text-muted">Solved: <b style="color: ${solvedCount > 0 ? 'var(--accent-cyan)' : 'var(--text-primary)'}; font-family: var(--font-mono);">${solvedCount}</b> / ${t.total}</span>
                   <span style="color: var(--text-muted); font-size: 10px;">
                     <span style="color: var(--diff-easy); font-weight: 600;">${t.easy}E</span> / 
                     <span style="color: var(--diff-medium); font-weight: 600;">${t.medium}M</span> / 
@@ -75,7 +78,7 @@ function renderDsaTopicExplorer() {
                 </div>
 
                 <div class="progress-bar-track" style="margin-bottom: var(--space-3);">
-                  <div class="progress-bar-fill progress-bar-cyan" style="width: ${pct}%;"></div>
+                  <div class="progress-bar-fill progress-bar-cyan" style="width: ${Math.max(solvedCount > 0 ? 4 : 0, pct)}%;"></div>
                 </div>
 
                 <button class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;" onclick="event.stopPropagation(); selectDsaTopic('${t.name}');">

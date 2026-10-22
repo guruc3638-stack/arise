@@ -33,3 +33,7 @@ class StudySummaryResponse(BaseModel):
     total_hours: float = 0.0
     session_count: int = 0
     last_session_at: Optional[datetime] = None
+    today_seconds: int = 0
+    today_minutes: int = 0
+    today_hours: float = 0.0
+    daily_streak: int = 0

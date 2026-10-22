@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Tuple
 from fastapi import HTTPException, status
 
@@ -147,12 +147,37 @@ class SelfStudyService:
         completed_sessions = [s for s in sessions if s.get("ended_at") is not None]
         last_session_at = max((s["ended_at"] for s in completed_sessions), default=None)
 
+        # Calculate daily metrics (today's study duration & streak)
+        today_date = datetime.now(timezone.utc).date()
+        today_sessions = [
+            s for s in completed_sessions
+            if s.get("started_at") and getattr(s["started_at"], "date", lambda: None)() == today_date
+        ]
+        today_seconds = sum(s.get("duration_seconds") or 0 for s in today_sessions)
+
+        dates_with_study = {
+            s["started_at"].date()
+            for s in completed_sessions
+            if s.get("started_at") and hasattr(s["started_at"], "date")
+        }
+        streak = 0
+        check_date = today_date
+        if check_date not in dates_with_study:
+            check_date = today_date - timedelta(days=1)
+        while check_date in dates_with_study:
+            streak += 1
+            check_date -= timedelta(days=1)
+
         return StudySummaryResponse(
             total_seconds=total_seconds,
             total_minutes=total_seconds // 60,
             total_hours=round(total_seconds / 3600.0, 2),
             session_count=len(completed_sessions),
             last_session_at=last_session_at,
+            today_seconds=today_seconds,
+            today_minutes=today_seconds // 60,
+            today_hours=round(today_seconds / 3600.0, 2),
+            daily_streak=streak,
         )
 
 

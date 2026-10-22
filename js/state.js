@@ -1105,42 +1105,68 @@ const AriseState = {
   },
 
   async startStudySession(studyFileId = null) {
-    try {
-      const res = await this.apiRequest('/study-sessions', 'POST', { study_file_id: studyFileId });
-      this.activeStudySessionId = res.id;
-      this.timerRunning = true;
-      this.timerSeconds = 0;
-      if (!this.timerInterval && typeof setInterval !== 'undefined') {
-        this.timerInterval = setInterval(() => {
-          if (this.timerRunning) {
-            this.timerSeconds++;
-            const timerEl = typeof document !== 'undefined' ? document.getElementById('study-timer-display') : null;
-            if (timerEl) {
-              const minutes = Math.floor(this.timerSeconds / 60);
-              const seconds = this.timerSeconds % 60;
-              timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            } else if (this.currentScreen === 'pdf-reader') {
-              this.notify();
-            }
+    this.timerRunning = true;
+    this.timerSeconds = 0;
+    if (!this.timerInterval && typeof setInterval !== 'undefined') {
+      this.timerInterval = setInterval(() => {
+        if (this.timerRunning) {
+          this.timerSeconds++;
+          const timerEl = typeof document !== 'undefined' ? document.getElementById('study-timer-display') : null;
+          if (timerEl) {
+            const minutes = Math.floor(this.timerSeconds / 60);
+            const seconds = this.timerSeconds % 60;
+            timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+          } else if (this.currentScreen === 'pdf-reader') {
+            this.notify();
           }
-        }, 1000);
-      }
-      this.notify();
-      return res;
-    } catch (err) {
-      console.warn('Could not start study session:', err.message);
-      return null;
+        }
+      }, 1000);
     }
+
+    if (this.authToken) {
+      try {
+        const res = await this.apiRequest('/study-sessions', 'POST', { study_file_id: studyFileId });
+        this.activeStudySessionId = res.id;
+        this.notify();
+        return res;
+      } catch (err) {
+        console.warn('Could not start remote study session:', err.message);
+      }
+    }
+    this.notify();
+    return { id: 'local-' + Date.now(), study_file_id: studyFileId };
   },
 
   async finishStudySession() {
+    const duration = this.timerSeconds || 0;
     this.timerRunning = false;
     if (this.timerInterval && typeof clearInterval !== 'undefined') {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
+
+    // Always log session locally if studied for at least 5 seconds
+    if (duration >= 5) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          const sessions = JSON.parse(localStorage.getItem('arise_study_sessions') || '[]');
+          sessions.unshift({
+            id: 'sess-' + Date.now(),
+            docId: (this.activeDoc && this.activeDoc.id) || 'doc-general',
+            docTitle: (this.activeDoc && (this.activeDoc.original_filename || this.activeDoc.title)) || 'Study Session',
+            durationSeconds: duration,
+            startedAt: new Date(Date.now() - duration * 1000).toISOString(),
+            endedAt: new Date().toISOString(),
+            dateStr: todayStr
+          });
+          localStorage.setItem('arise_study_sessions', JSON.stringify(sessions));
+        }
+      } catch (_) {}
+    }
+
     let finishRes = null;
-    if (this.activeStudySessionId) {
+    if (this.activeStudySessionId && !this.activeStudySessionId.startsWith('local-') && this.authToken) {
       try {
         finishRes = await this.apiRequest(`/study-sessions/${this.activeStudySessionId}/finish`, 'POST');
       } catch (err) {
@@ -1148,33 +1174,99 @@ const AriseState = {
       }
     }
     this.activeStudySessionId = null;
+    this.timerSeconds = 0;
     await this.fetchStudySummary();
     this.notify();
     return finishRes;
   },
 
-  async fetchStudySummary() {
-    const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
-    if (!token) {
-      this.studySummaryLoaded = true;
-      return null;
-    }
-    if (this.studySummaryLoading) return this.studySummary;
-    this.studySummaryLoading = true;
+  async logManualStudyTime(minutes = 30, note = 'Document Study') {
+    const seconds = Math.max(60, minutes * 60);
+    const todayStr = new Date().toISOString().slice(0, 10);
     try {
-      const summary = await this.apiRequest('/study-sessions/summary');
-      if (summary) {
-        this.studySummary = summary;
+      if (typeof localStorage !== 'undefined') {
+        const sessions = JSON.parse(localStorage.getItem('arise_study_sessions') || '[]');
+        sessions.unshift({
+          id: 'manual-' + Date.now(),
+          docId: 'manual',
+          docTitle: note,
+          durationSeconds: seconds,
+          startedAt: new Date(Date.now() - seconds * 1000).toISOString(),
+          endedAt: new Date().toISOString(),
+          dateStr: todayStr
+        });
+        localStorage.setItem('arise_study_sessions', JSON.stringify(sessions));
       }
-      this.studySummaryLoaded = true;
-      this.studySummaryLoading = false;
-      this.notify();
-      return summary;
-    } catch (err) {
-      this.studySummaryLoaded = true;
-      this.studySummaryLoading = false;
-      return null;
+    } catch (_) {}
+
+    await this.fetchStudySummary();
+    this.notify();
+  },
+
+  async fetchStudySummary() {
+    let localSessions = [];
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localSessions = JSON.parse(localStorage.getItem('arise_study_sessions') || '[]');
+      }
+    } catch (_) {}
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const localTodaySecs = localSessions.filter(s => s.dateStr === todayStr).reduce((acc, s) => acc + (s.durationSeconds || 0), 0);
+    const localTotalSecs = localSessions.reduce((acc, s) => acc + (s.durationSeconds || 0), 0);
+    
+    // Calculate local streak
+    const datesWithStudy = new Set(localSessions.map(s => s.dateStr).filter(Boolean));
+    let localStreak = 0;
+    let curr = new Date();
+    let checkDateStr = curr.toISOString().slice(0, 10);
+    if (!datesWithStudy.has(checkDateStr)) {
+      curr.setDate(curr.getDate() - 1);
+      checkDateStr = curr.toISOString().slice(0, 10);
     }
+    while (datesWithStudy.has(checkDateStr)) {
+      localStreak++;
+      curr.setDate(curr.getDate() - 1);
+      checkDateStr = curr.toISOString().slice(0, 10);
+    }
+
+    let remoteSummary = null;
+    if (this.authToken && !this.studySummaryLoading) {
+      this.studySummaryLoading = true;
+      try {
+        remoteSummary = await this.apiRequest('/study-sessions/summary');
+      } catch (err) {
+        console.warn('Could not fetch remote study summary:', err.message);
+      }
+      this.studySummaryLoading = false;
+    }
+
+    const totalSeconds = Math.max((remoteSummary && remoteSummary.total_seconds) || 0, localTotalSecs);
+    const todaySeconds = Math.max((remoteSummary && remoteSummary.today_seconds) || 0, localTodaySecs);
+    const sessionCount = Math.max((remoteSummary && remoteSummary.session_count) || 0, localSessions.length);
+    const streak = Math.max((remoteSummary && remoteSummary.daily_streak) || 0, localStreak, todaySeconds > 0 ? 1 : 0);
+
+    this.studySummary = {
+      total_seconds: totalSeconds,
+      total_minutes: Math.round(totalSeconds / 60),
+      total_hours: Number((totalSeconds / 3600).toFixed(1)),
+      session_count: sessionCount,
+      today_seconds: todaySeconds,
+      today_minutes: Math.round(todaySeconds / 60),
+      today_hours: Number((todaySeconds / 3600).toFixed(1)),
+      daily_streak: streak,
+      last_session_at: (remoteSummary && remoteSummary.last_session_at) || (localSessions[0] ? localSessions[0].endedAt : null)
+    };
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('arise_study_summary', JSON.stringify(this.studySummary));
+      }
+    } catch (_) {}
+
+    this.studySummaryLoaded = true;
+    this.notify();
+    return this.studySummary;
   },
 
   async fetchBadges() {
@@ -1231,6 +1323,13 @@ const AriseState = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.AriseState = AriseState;
+}
+if (typeof globalThis !== 'undefined') {
+  globalThis.AriseState = AriseState;
+}
 
 
 
