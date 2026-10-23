@@ -14,23 +14,23 @@ const ARISE_DATA = {
     state: "Maharashtra",
     avatar: "RD",
     avatarBg: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)",
-    verifiedXp: 0, // Starts at 0 until judge accepts problem solution
+    verifiedXp: 10540, // Baseline: 148 verified solved problems (10,540 XP)
     rank: {
-      college: null,
-      district: null,
-      maharashtra: null,
-      india: null
+      college: 1,
+      district: 2,
+      maharashtra: 4,
+      india: 18
     },
-    rankDisplay: "Unranked",
-    rankMovement: "—",
+    rankDisplay: "#4",
+    rankMovement: "+2",
     solvedStats: {
-      total: 0,
-      easy: 0,
-      medium: 0,
-      hard: 0
+      total: 148,
+      easy: 40,
+      medium: 50,
+      hard: 58
     },
-    acceptanceRate: "—",
-    coursesCompleted: 0,
+    acceptanceRate: "92.4%",
+    coursesCompleted: 3,
     privacySetting: "public", // 'public' | 'friends' | 'private'
     joinedDate: "October 2025"
   },
@@ -14371,19 +14371,21 @@ function syncProblemStatuses() {
     }
   } catch (_) {}
 
-  // 1. If user has recentSolves or problems_solved list
+  // 1. Ensure baseline 148 problems (ARISE-P101 through ARISE-P248) are always included in savedSolved
+  const base148Problems = ARISE_DATA.problems.slice(0, 148);
+  base148Problems.forEach(p => {
+    if (!savedSolved.includes(p.id)) {
+      savedSolved.push(p.id);
+    }
+  });
+
+  // 2. If user has recentSolves or problems_solved list, merge them in as well
   if (user && Array.isArray(user.recentSolves)) {
     user.recentSolves.forEach(r => {
       if (r && r.id && !savedSolved.includes(r.id)) {
         savedSolved.push(r.id);
       }
     });
-  }
-
-  // 2. If user is seeded top student (Aarav Sharma AR-XYZ999 with 148 solves / 10,540 XP)
-  const isTopRanker = user && (user.uid === 'AR-XYZ999' || user.email === 'xyz@gmail.com' || (user.verifiedXp && user.verifiedXp >= 10000));
-  if (isTopRanker) {
-    savedSolved = ARISE_DATA.problems.slice(0, 148).map(p => p.id);
   }
 
   // 3. Apply statuses to every problem
@@ -14397,7 +14399,7 @@ function syncProblemStatuses() {
     }
   });
 
-  // 4. Update user solved stats to match the solved problems count
+  // 4. Update user solved stats to match the solved problems count (148 baseline + any newly solved)
   if (user && user.solvedStats) {
     const solvedProbs = ARISE_DATA.problems.filter(p => p.status === 'Solved');
     const totalCount = solvedProbs.length;
@@ -14406,9 +14408,10 @@ function syncProblemStatuses() {
     user.solvedStats.medium = solvedProbs.filter(p => p.difficulty === 'Medium').length;
     user.solvedStats.hard = solvedProbs.filter(p => p.difficulty === 'Hard').length;
 
-    // If there are solved problems but verifiedXp is 0, compute verified XP
-    if (totalCount > 0 && (!user.verifiedXp || user.verifiedXp === 0)) {
-      user.verifiedXp = solvedProbs.reduce((sum, prob) => sum + (prob.verifiedXp || 40), 0);
+    // Calculate verified XP: baseline 10,540 XP + each newly solved problem's XP
+    const calculatedXp = solvedProbs.reduce((sum, prob) => sum + (prob.verifiedXp || 40), 0);
+    if (!user.verifiedXp || user.verifiedXp < calculatedXp) {
+      user.verifiedXp = calculatedXp;
     }
   }
 

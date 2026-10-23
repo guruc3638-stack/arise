@@ -1258,6 +1258,8 @@ function renderJudgeResultState(status, problem) {
   }
 
   if (status === 'accepted') {
+    const isPractice = res.isPractice || res.alreadySolved;
+    const xpEarned = isPractice ? 0 : (res.verifiedXp !== undefined ? res.verifiedXp : (problem.verifiedXp || 40));
     return `
       <div class="judge-state-container">
         <div class="judge-header-banner judge-state-accepted">
@@ -1269,8 +1271,12 @@ function renderJudgeResultState(status, problem) {
             </div>
           </div>
           <div style="text-align: right;">
-            <span class="font-mono" style="font-weight: 700; font-size: 18px; color: var(--success);">+${problem.verifiedXp} XP</span>
-            <div style="font-size: 10px; color: rgba(255,255,255,0.7);">Cryptographic confirmation</div>
+            ${isPractice 
+              ? `<span class="font-mono" style="font-weight: 700; font-size: 16px; color: var(--text-muted);">+0 XP (Practice)</span>
+                 <div style="font-size: 10px; color: rgba(255,255,255,0.7);">Already solved previously</div>`
+              : `<span class="font-mono" style="font-weight: 700; font-size: 18px; color: var(--success);">+${xpEarned} XP</span>
+                 <div style="font-size: 10px; color: rgba(255,255,255,0.7);">Cryptographic confirmation</div>`
+            }
           </div>
         </div>
 
@@ -1290,6 +1296,16 @@ function renderJudgeResultState(status, problem) {
             <span class="font-mono" style="font-size: 16px; font-weight: 700; color: var(--success);">VERIFIED</span>
             <span class="text-small text-muted" style="font-size: 11px;">SHA-256 Auth Signed</span>
           </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 6px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--success); font-weight: 600;">
+            <div class="btn-loading" style="width: 14px; height: 14px; border-width: 2px; border-top-color: var(--success);"></div>
+            <span>Directing to DSA Problems...</span>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="AriseState.setScreen('dsa-problems')" style="padding: 4px 12px; font-size: 12px;">
+            Return to Problem List →
+          </button>
         </div>
       </div>
     `;
@@ -1494,17 +1510,25 @@ function handleJudgeEvaluationResult(result, p, lang) {
   AriseState.recordSubmission(p.id, subEntry);
 
   if (result.status === 'accepted') {
-    const alreadySolved = p.status === 'Solved' || result.xpAwardedBefore;
+    let savedList = [];
+    try {
+      if (typeof localStorage !== 'undefined') {
+        savedList = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
+      }
+    } catch (_) {}
+
+    const alreadySolved = p.status === 'Solved' || savedList.includes(p.id) || !!result.xpAwardedBefore;
+    result.alreadySolved = alreadySolved;
+    result.isPractice = alreadySolved;
     p.status = 'Solved';
 
     if (!alreadySolved) {
       // 1. Persist solve to localStorage immediately
       try {
         if (typeof localStorage !== 'undefined') {
-          let saved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
-          if (!saved.includes(p.id)) {
-            saved.push(p.id);
-            localStorage.setItem('arise_solved_problem_ids', JSON.stringify(saved));
+          if (!savedList.includes(p.id)) {
+            savedList.push(p.id);
+            localStorage.setItem('arise_solved_problem_ids', JSON.stringify(savedList));
           }
           let attempted = JSON.parse(localStorage.getItem('arise_attempted_problem_ids') || '[]');
           attempted = attempted.filter(id => id !== p.id);
@@ -1528,12 +1552,17 @@ function handleJudgeEvaluationResult(result, p, lang) {
         }
       }
 
-      const award = result.verifiedXp !== undefined ? result.verifiedXp : (p.verifiedXp || 10);
+      const award = result.verifiedXp !== undefined ? result.verifiedXp : (p.verifiedXp || 40);
+      result.verifiedXp = award;
+
       if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
         if (result.totalVerifiedXp !== undefined) {
           ARISE_DATA.currentUser.verifiedXp = result.totalVerifiedXp;
         } else {
-          ARISE_DATA.currentUser.verifiedXp += award;
+          ARISE_DATA.currentUser.verifiedXp = (ARISE_DATA.currentUser.verifiedXp || 0) + award;
+        }
+        if (!ARISE_DATA.currentUser.solvedStats) {
+          ARISE_DATA.currentUser.solvedStats = { total: 148, easy: 40, medium: 50, hard: 58 };
         }
         ARISE_DATA.currentUser.solvedStats.total += 1;
         if (p.difficulty === 'Easy') ARISE_DATA.currentUser.solvedStats.easy += 1;
@@ -1559,12 +1588,12 @@ function handleJudgeEvaluationResult(result, p, lang) {
           syncLeaderboardWithUser(ARISE_DATA.currentUser);
         } else if (ARISE_DATA.currentUser.rankDisplay === 'Unranked' || !ARISE_DATA.currentUser.rank || !ARISE_DATA.currentUser.rank.maharashtra) {
           ARISE_DATA.currentUser.rank = {
-            college: 3,
-            district: 8,
-            maharashtra: 14,
-            india: 86
+            college: 1,
+            district: 2,
+            maharashtra: 4,
+            india: 18
           };
-          ARISE_DATA.currentUser.rankDisplay = '#14';
+          ARISE_DATA.currentUser.rankDisplay = '#4';
         }
 
         // Permanent storage in localStorage for instant dashboard and refresh persistence
@@ -1597,57 +1626,21 @@ function handleJudgeEvaluationResult(result, p, lang) {
             type: "solve_success",
             meta: { problemId: p.id, xp: award }
           });
-
-          const totalSolved = ARISE_DATA.currentUser.solvedStats.total;
-          if (totalSolved === 1) {
-            AriseState.addNotification({
-              title: "🚀 First Milestone Achieved!",
-              body: "You conquered your very first algorithmic challenge on ARISE! Your journey to the top begins.",
-              type: "milestone",
-              meta: { milestone: "first_solve" }
-            });
-          } else if (totalSolved === 5) {
-            AriseState.addNotification({
-              title: "🌟 5 Solves Milestone!",
-              body: "5 algorithmic challenges mastered! Your ranking is rising.",
-              type: "milestone",
-              meta: { milestone: "5_solves" }
-            });
-          } else if (totalSolved === 10) {
-            AriseState.addNotification({
-              title: "🔥 10 Solves Milestone!",
-              body: "Double digits! 10 verified solutions recorded in the ARISE judge cluster.",
-              type: "milestone",
-              meta: { milestone: "10_solves" }
-            });
-          } else if (totalSolved === 25) {
-            AriseState.addNotification({
-              title: "💎 25 Solves Milestone!",
-              body: "Quarter-century milestone! 25 judge-verified problem solutions.",
-              type: "milestone",
-              meta: { milestone: "25_solves" }
-            });
-          }
-
-          if (ARISE_DATA.currentUser.rank && ARISE_DATA.currentUser.rank.maharashtra) {
-            const currentRank = ARISE_DATA.currentUser.rank.maharashtra;
-            if (!AriseState._notifiedStateRank || AriseState._notifiedStateRank > currentRank) {
-              AriseState._notifiedStateRank = currentRank;
-              AriseState.addNotification({
-                title: "📈 Official Rank Milestone",
-                body: `You are ranked #${currentRank} in Maharashtra on the official leaderboard!`,
-                type: "rank_update",
-                meta: { rank: currentRank }
-              });
-            }
-          }
         }
       }
-      showToast(`Judge Confirmed: Accepted! +${award} Verified XP awarded.`, 'success');
+      showToast(`Judge Confirmed: Accepted! +${award} Verified XP awarded. Solved: ${ARISE_DATA.currentUser.solvedStats.total}/160. Directing to DSA Problems...`, 'success');
     } else {
-      // Subsequent solve awards 0 XP per PRD/SRS rule
-      showToast('Accepted! Practice recorded (0 additional XP per one-time XP rule).', 'info');
+      // Subsequent solve awards 0 XP per PRD/SRS rule, count is NOT incremented
+      result.verifiedXp = 0;
+      showToast('Accepted! Practice recorded (0 additional XP for already solved question). Directing to DSA Problems...', 'info');
     }
+
+    // Direct navigation back to the DSA problems page
+    setTimeout(() => {
+      if (typeof AriseState !== 'undefined' && typeof AriseState.setScreen === 'function') {
+        AriseState.setScreen('dsa-problems');
+      }
+    }, 1400);
   } else {
     if (p.status !== 'Solved') {
       p.status = 'Attempted';

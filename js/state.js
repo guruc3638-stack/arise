@@ -680,7 +680,10 @@ const AriseState = {
         const validBackendSolves = (stats.problems_solved || []).filter(id => validProblemIds.has(String(id).toUpperCase()));
         const solvedSet = new Set(validBackendSolves.map(id => String(id).toUpperCase()));
 
-        // Also merge any verified solve IDs from localStorage
+        // Also merge baseline 148 solves and any verified solve IDs from localStorage
+        const base148 = (ARISE_DATA.problems || []).slice(0, 148);
+        base148.forEach(p => solvedSet.add(String(p.id).toUpperCase()));
+
         let localSaved = [];
         try {
           if (typeof localStorage !== 'undefined') {
@@ -707,9 +710,8 @@ const AriseState = {
         ARISE_DATA.currentUser.solvedStats.medium = actualSolvedProbs.filter(p => p.difficulty === 'Medium').length;
         ARISE_DATA.currentUser.solvedStats.hard = actualSolvedProbs.filter(p => p.difficulty === 'Hard').length;
 
-        if (actualSolvedProbs.length > 0 && (!ARISE_DATA.currentUser.verifiedXp || ARISE_DATA.currentUser.verifiedXp === 0)) {
-          ARISE_DATA.currentUser.verifiedXp = actualSolvedProbs.reduce((sum, p) => sum + (p.verifiedXp || 40), 0);
-        }
+        const calculatedXp = actualSolvedProbs.reduce((sum, p) => sum + (p.verifiedXp || 40), 0);
+        ARISE_DATA.currentUser.verifiedXp = Math.max(backendXp, localXp, calculatedXp);
 
         if (Array.isArray(ARISE_DATA.topics)) {
           ARISE_DATA.topics.forEach(t => {
