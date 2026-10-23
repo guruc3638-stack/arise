@@ -116,11 +116,38 @@ function getDailyStudyHistory() {
   return days;
 }
 
-function renderSelfStudyLibrary() {
-  const docs = (AriseState.studyFiles && AriseState.studyFiles.length > 0)
-    ? AriseState.studyFiles
-    : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.studyLibrary) ? ARISE_DATA.studyLibrary : []);
+function getUnifiedStudyDocs() {
+  const localUploads = (typeof AriseState !== 'undefined' && typeof AriseState.getLocalUploadedStudyFiles === 'function')
+    ? AriseState.getLocalUploadedStudyFiles()
+    : [];
 
+  const stateFiles = (typeof AriseState !== 'undefined' && Array.isArray(AriseState.studyFiles))
+    ? AriseState.studyFiles
+    : [];
+
+  const dataFiles = (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.studyLibrary))
+    ? ARISE_DATA.studyLibrary
+    : [];
+
+  // Local uploads and state files take priority at the top
+  const all = [...localUploads, ...stateFiles, ...dataFiles];
+  const seen = new Set();
+  const result = [];
+
+  for (const d of all) {
+    if (!d) continue;
+    const key = d.id || d.original_filename || d.title;
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      result.push(d);
+    }
+  }
+
+  return result;
+}
+
+function renderSelfStudyLibrary() {
+  const docs = getUnifiedStudyDocs();
   const metrics = getStudyTimeMetrics();
   const dailyHistory = getDailyStudyHistory();
   const hasFiles = docs.length > 0;
@@ -231,21 +258,22 @@ function renderSelfStudyLibrary() {
             const title = doc.original_filename || doc.title || 'Untitled PDF';
             const sizeDisplay = doc.size_bytes ? ((doc.size_bytes >= 1048576) ? `${(doc.size_bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(doc.size_bytes / 1024))} KB`) : (doc.fileSize || '52 KB');
             const dateStr = doc.created_at ? new Date(doc.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : (doc.lastOpened || 'Recent');
+            const isUserUpload = doc.isUploaded || String(docId).startsWith('study-local-') || String(docId).startsWith('study-upload-');
 
             return `
               <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-3); padding: 16px 18px; border-radius: var(--radius-lg); cursor: pointer;" onclick="openDocumentReader('${docId}')">
                 <div>
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                    <span class="badge" style="background: rgba(139,92,246,0.15); color: #C4B5FD; border: 1px solid rgba(139,92,246,0.3);">
-                      PDF Document • ${doc.pages || 16} Pages
+                    <span class="badge" style="${isUserUpload ? 'background: rgba(34, 197, 94, 0.15); color: #86EFAC; border: 1px solid rgba(34, 197, 94, 0.3);' : 'background: rgba(139,92,246,0.15); color: #C4B5FD; border: 1px solid rgba(139,92,246,0.3);'}">
+                      ${isUserUpload ? 'Uploaded PDF' : 'PDF Document'} • ${doc.pages || 1} Pages
                     </span>
                     <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">${sizeDisplay}</span>
                   </div>
                   <h3 style="font-size: 15.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; line-height: 1.4; word-break: break-word;">
-                    ${title}
+                    ${escapeHtml(title)}
                   </h3>
                   <p class="text-small text-muted">
-                    Private Document • ${doc.pages || 16} Pages • Uploaded ${dateStr}
+                    ${isUserUpload ? 'Private Student Upload' : 'Academic Material'} • ${doc.pages || 1} Pages • Uploaded ${dateStr}
                   </p>
                 </div>
 
@@ -291,6 +319,7 @@ async function handleDeleteStudyFile(fileId) {
     if (typeof AriseState.deleteStudyFile === 'function') {
       await AriseState.deleteStudyFile(fileId);
       if (typeof showToast === 'function') showToast('Study document deleted.', 'info');
+      if (typeof AriseState.notify === 'function') AriseState.notify();
     }
   } catch (err) {
     if (typeof showToast === 'function') showToast('Could not delete file: ' + err.message, 'error');
@@ -317,7 +346,6 @@ function getDocumentCurriculum(doc) {
     if (title.includes('301') || title.includes('system')) return ARISE_CURRICULA['Course_301'];
     if (title.includes('302') || title.includes('operating')) return ARISE_CURRICULA['Course_302'];
     if (title.includes('401') || title.includes('combinatorics') || title.includes('crypto')) return ARISE_CURRICULA['Course_401'];
-    return ARISE_CURRICULA['Course_101'];
   }
   return null;
 }
@@ -591,51 +619,64 @@ function renderStudyPageContent(doc, pageNum, totalPages) {
 }
 
 async function openDocumentReader(docId) {
-  const docs = (AriseState.studyFiles && AriseState.studyFiles.length > 0)
-    ? AriseState.studyFiles
-    : ((typeof ARISE_DATA !== 'undefined' && ARISE_DATA.studyLibrary) ? ARISE_DATA.studyLibrary : []);
-
+  const docs = getUnifiedStudyDocs();
   const d = docs.find(item => item.id === docId) || docs[0];
   if (d) {
     AriseState.activeDoc = d;
     AriseState.readerCurrentPage = 1;
     AriseState.readerZoom = 100;
 
-    // 1. If backend file and no blobUrl, try fetching binary from backend
-    if (!d.blobUrl && AriseState.authToken && d.id && !d.id.startsWith('doc-') && !d.id.startsWith('study-local-')) {
-      try {
-        const res = await fetch(`${AriseState.apiBase}/study-files/${d.id}/download`, {
-          headers: { 'Authorization': `Bearer ${AriseState.authToken}` }
-        });
-        if (res.ok) {
-          const blob = await res.blob();
-          d.blobUrl = URL.createObjectURL(blob);
-          AriseState.notify();
-        }
-      } catch (err) {
-        console.warn('Could not fetch backend PDF bytes:', err);
-      }
-    }
-
-    // 2. If still no blobUrl (e.g. seeded assessments doc-1 to doc-6), synthesize full valid multi-page PDF blob
+    // Check if d.blobUrl is already a working URL
     if (!d.blobUrl) {
-      const pageLookup = {
-        "Course_101_Data_Structures_Assessment.pdf": 16,
-        "Course_201_Graph_Algorithms_Assessment.pdf": 14,
-        "Course_202_Dynamic_Programming_Assessment.pdf": 18,
-        "Course_301_System_Design_Assessment.pdf": 15,
-        "Course_302_Operating_Systems_Assessment.pdf": 12,
-        "Course_401_Combinatorics_Crypto_Assessment.pdf": 17
-      };
-      const title = d.original_filename || d.title || 'Academic Assessment.pdf';
-      const pages = d.pages || pageLookup[title] || 16;
-      d.pages = pages;
-      try {
-        const pdfText = generateClientPdfString(title.replace(/\.pdf$/i, ''), d.subject || 'Computer Science', 'Verified 96% Pass', pages);
-        const blob = new Blob([pdfText], { type: 'application/pdf' });
-        d.blobUrl = URL.createObjectURL(blob);
-      } catch (e) {
-        console.warn('Could not generate client PDF blob:', e);
+      // 1. Try to load original PDF file/blob from AriseStorage (IndexedDB / Memory fallback)
+      if (typeof AriseStorage !== 'undefined') {
+        try {
+          const storedBlob = await AriseStorage.getBlob(d.id);
+          if (storedBlob) {
+            if (typeof storedBlob === 'string' && storedBlob.startsWith('data:')) {
+              d.blobUrl = storedBlob;
+            } else if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+              d.blobUrl = URL.createObjectURL(storedBlob);
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 2. If backend file and still no blobUrl, try fetching binary from backend
+      if (!d.blobUrl && AriseState.authToken && d.id && !String(d.id).startsWith('doc-') && !String(d.id).startsWith('study-')) {
+        try {
+          const res = await fetch(`${AriseState.apiBase}/study-files/${d.id}/download`, {
+            headers: { 'Authorization': `Bearer ${AriseState.authToken}` }
+          });
+          if (res.ok) {
+            const blob = await res.blob();
+            d.blobUrl = URL.createObjectURL(blob);
+          }
+        } catch (err) {
+          console.warn('Could not fetch backend PDF bytes:', err);
+        }
+      }
+
+      // 3. Fallback for seeded assessments (doc-1 to doc-6) or if bytes unavailable
+      if (!d.blobUrl) {
+        const pageLookup = {
+          "Course_101_Data_Structures_Assessment.pdf": 16,
+          "Course_201_Graph_Algorithms_Assessment.pdf": 14,
+          "Course_202_Dynamic_Programming_Assessment.pdf": 18,
+          "Course_301_System_Design_Assessment.pdf": 15,
+          "Course_302_Operating_Systems_Assessment.pdf": 12,
+          "Course_401_Combinatorics_Crypto_Assessment.pdf": 17
+        };
+        const title = d.original_filename || d.title || 'Academic Assessment.pdf';
+        const pages = d.pages || pageLookup[title] || 16;
+        d.pages = pages;
+        try {
+          const pdfText = generateClientPdfString(title.replace(/\.pdf$/i, ''), d.subject || 'Computer Science', 'Verified 96% Pass', pages);
+          const blob = new Blob([pdfText], { type: 'application/pdf' });
+          d.blobUrl = URL.createObjectURL(blob);
+        } catch (e) {
+          console.warn('Could not generate client PDF blob:', e);
+        }
       }
     }
   }
@@ -1064,7 +1105,7 @@ async function submitStudyPdfUpload() {
 
   try {
     if (typeof AriseState.uploadStudyPdf === 'function') {
-      await AriseState.uploadStudyPdf(selectedUploadFile);
+      const uploadedDoc = await AriseState.uploadStudyPdf(selectedUploadFile);
       selectedUploadFile = null;
       if (inputEl) inputEl.value = '';
       const modal = document.getElementById('upload-doc-modal');
@@ -1072,7 +1113,7 @@ async function submitStudyPdfUpload() {
       if (typeof showToast === 'function') {
         showToast('Document uploaded successfully to your private library!', 'success');
       }
-      AriseState.notify();
+      AriseState.setScreen('self-study');
     }
   } catch (err) {
     showModalError('Upload rejected: ' + (err.message || 'Error'));
@@ -1085,6 +1126,7 @@ async function submitStudyPdfUpload() {
 
 // Window exposes for DOM events
 if (typeof window !== 'undefined') {
+  window.getUnifiedStudyDocs = getUnifiedStudyDocs;
   window.openDocumentReader = openDocumentReader;
   window.openUploadDocumentModal = openUploadDocumentModal;
   window.submitStudyPdfUpload = submitStudyPdfUpload;
@@ -1099,6 +1141,7 @@ if (typeof window !== 'undefined') {
   window.handleDeleteStudyFile = handleDeleteStudyFile;
 }
 if (typeof globalThis !== 'undefined') {
+  globalThis.getUnifiedStudyDocs = getUnifiedStudyDocs;
   globalThis.openDocumentReader = openDocumentReader;
   globalThis.openUploadDocumentModal = openUploadDocumentModal;
   globalThis.submitStudyPdfUpload = submitStudyPdfUpload;
@@ -1112,4 +1155,5 @@ if (typeof globalThis !== 'undefined') {
   globalThis.closeSessionSummaryModal = closeSessionSummaryModal;
   globalThis.handleDeleteStudyFile = handleDeleteStudyFile;
 }
+
 

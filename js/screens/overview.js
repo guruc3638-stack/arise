@@ -188,9 +188,9 @@ function renderOverviewDashboard() {
 
           <div class="metric-card">
             <span class="metric-label">Overall Progress</span>
-            <span class="metric-value" style="color: var(--accent-cyan);">${isCleanAccount ? '0%' : ((user.solvedStats && user.solvedStats.total > 0) ? `${Math.round((user.solvedStats.total / 441) * 100)}%` : '0%')}</span>
+            <span class="metric-value" style="color: var(--accent-cyan);">${isCleanAccount ? '0%' : ((user.solvedStats && user.solvedStats.total > 0) ? `${Math.round((user.solvedStats.total / ((typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.problems) && ARISE_DATA.problems.length > 0) ? ARISE_DATA.problems.length : 160)) * 100)}%` : '0%')}</span>
             <div class="progress-bar-track" style="margin-top: 4px;">
-              <div class="progress-bar-fill progress-bar-cyan" style="width: ${isCleanAccount ? 0 : ((user.solvedStats && user.solvedStats.total > 0) ? Math.round((user.solvedStats.total / 441) * 100) : 0)}%;"></div>
+              <div class="progress-bar-fill progress-bar-cyan" style="width: ${isCleanAccount ? 0 : ((user.solvedStats && user.solvedStats.total > 0) ? Math.round((user.solvedStats.total / ((typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.problems) && ARISE_DATA.problems.length > 0) ? ARISE_DATA.problems.length : 160)) * 100) : 0)}%;"></div>
             </div>
           </div>
 

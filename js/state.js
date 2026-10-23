@@ -44,6 +44,107 @@ if (typeof window !== 'undefined') {
 }
 AriseTheme.init();
 
+// Persistent IndexedDB Blob & File Storage for offline/client study PDFs
+const AriseStorage = {
+  dbName: 'arise_db',
+  dbVersion: 1,
+  storeName: 'study_blobs',
+  memoryFallback: new Map(),
+
+  async getDb() {
+    if (typeof indexedDB === 'undefined') return null;
+    return new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(this.dbName, this.dbVersion);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(this.storeName)) {
+            db.createObjectStore(this.storeName, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  },
+
+  async saveBlob(id, fileOrBlob) {
+    if (!id || !fileOrBlob) return false;
+    this.memoryFallback.set(id, fileOrBlob);
+    try {
+      const db = await this.getDb();
+      if (!db) return true;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          store.put({ id, data: fileOrBlob });
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        } catch (_) {
+          resolve(false);
+        }
+      });
+    } catch (_) {
+      return false;
+    }
+  },
+
+  async getBlob(id) {
+    if (!id) return null;
+    if (this.memoryFallback.has(id)) return this.memoryFallback.get(id);
+    try {
+      const db = await this.getDb();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(this.storeName, 'readonly');
+          const store = tx.objectStore(this.storeName);
+          const req = store.get(id);
+          req.onsuccess = () => {
+            const res = req.result ? req.result.data : null;
+            if (res) this.memoryFallback.set(id, res);
+            resolve(res);
+          };
+          req.onerror = () => resolve(null);
+        } catch (_) {
+          resolve(null);
+        }
+      });
+    } catch (_) {
+      return null;
+    }
+  },
+
+  async deleteBlob(id) {
+    if (!id) return false;
+    this.memoryFallback.delete(id);
+    try {
+      const db = await this.getDb();
+      if (!db) return true;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          store.delete(id);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        } catch (_) {
+          resolve(false);
+        }
+      });
+    } catch (_) {
+      return false;
+    }
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.AriseStorage = AriseStorage;
+}
+
 const AriseState = {
   // Current active mode: 'prototype' | 'design-system'
   viewMode: 'prototype',
@@ -93,7 +194,15 @@ const AriseState = {
   userCode: {}, // problemId_lang -> user's edited source code
 
   // Self Study state
-  studyFiles: [],
+  studyFiles: (function() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('arise_uploaded_study_files');
+        return raw ? JSON.parse(raw) : [];
+      }
+    } catch (_) {}
+    return [];
+  })(),
   studyFilesLoaded: false,
   studyLoading: false,
   studySummary: { total_seconds: 0, total_minutes: 0, total_hours: 0.0, session_count: 0, last_session_at: null },
@@ -244,7 +353,9 @@ const AriseState = {
     this.currentScreen = screen;
     this.viewMode = 'prototype';
     this.notify();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   },
 
   setViewport(vp) {
@@ -558,10 +669,25 @@ const AriseState = {
     try {
       const stats = await this.apiRequest('/me/practice-stats');
       if (stats && typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
-        ARISE_DATA.currentUser.verifiedXp = stats.total_verified_xp;
-        ARISE_DATA.currentUser.solvedStats.total = stats.unique_solved_count;
-        
-        const solvedSet = new Set((stats.problems_solved || []).map(id => String(id).toUpperCase()));
+        ARISE_DATA.currentUser.verifiedXp = Number(stats.total_verified_xp || 0);
+
+        const validProblemIds = new Set((ARISE_DATA.problems || []).map(p => String(p.id).toUpperCase()));
+        const validBackendSolves = (stats.problems_solved || []).filter(id => validProblemIds.has(String(id).toUpperCase()));
+        const solvedSet = new Set(validBackendSolves.map(id => String(id).toUpperCase()));
+
+        // Also merge any verified solve IDs from localStorage
+        let localSaved = [];
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localSaved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
+          }
+        } catch (_) {}
+        localSaved.forEach(id => {
+          if (validProblemIds.has(String(id).toUpperCase())) {
+            solvedSet.add(String(id).toUpperCase());
+          }
+        });
+
         if (Array.isArray(ARISE_DATA.problems)) {
           ARISE_DATA.problems.forEach(p => {
             if (solvedSet.has(String(p.id).toUpperCase())) {
@@ -569,6 +695,13 @@ const AriseState = {
             }
           });
         }
+
+        const actualSolvedProbs = (ARISE_DATA.problems || []).filter(p => p.status === 'Solved');
+        ARISE_DATA.currentUser.solvedStats.total = actualSolvedProbs.length;
+        ARISE_DATA.currentUser.solvedStats.easy = actualSolvedProbs.filter(p => p.difficulty === 'Easy').length;
+        ARISE_DATA.currentUser.solvedStats.medium = actualSolvedProbs.filter(p => p.difficulty === 'Medium').length;
+        ARISE_DATA.currentUser.solvedStats.hard = actualSolvedProbs.filter(p => p.difficulty === 'Hard').length;
+
         if (Array.isArray(ARISE_DATA.topics)) {
           ARISE_DATA.topics.forEach(t => {
             const tNameLower = (t.name || '').trim().toLowerCase();
@@ -581,14 +714,12 @@ const AriseState = {
             t.solved = count;
           });
         }
-        // Persist solved problems to localStorage and sync leaderboards
+
+        // Persist strictly valid solved problems to localStorage and sync leaderboards
         try {
-          if (typeof localStorage !== 'undefined' && stats.problems_solved && stats.problems_solved.length > 0) {
-            let saved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
-            stats.problems_solved.forEach(id => {
-              if (!saved.includes(id)) saved.push(id);
-            });
-            localStorage.setItem('arise_solved_problem_ids', JSON.stringify(saved));
+          if (typeof localStorage !== 'undefined') {
+            const cleanArray = Array.from(solvedSet);
+            localStorage.setItem('arise_solved_problem_ids', JSON.stringify(cleanArray));
           }
         } catch (_) {}
         if (typeof syncLeaderboardWithUser === 'function') {
@@ -920,18 +1051,45 @@ const AriseState = {
     }
   },
 
+  getLocalUploadedStudyFiles() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('arise_uploaded_study_files');
+        return raw ? JSON.parse(raw) : [];
+      }
+    } catch (_) {}
+    return [];
+  },
+
+  saveLocalUploadedStudyFiles(files) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('arise_uploaded_study_files', JSON.stringify(files || []));
+      }
+    } catch (_) {}
+  },
+
   async fetchStudyFiles() {
     const token = this.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('arise_token') : null);
+    const localUploads = this.getLocalUploadedStudyFiles();
     if (!token) {
       this.studyFilesLoaded = true;
-      return this.studyFiles || [];
+      this.studyFiles = [...localUploads];
+      return this.studyFiles;
     }
     if (this.studyLoading) return this.studyFiles || [];
     this.authToken = token;
     this.studyLoading = true;
     try {
       const files = await this.apiRequest('/study-files');
-      this.studyFiles = Array.isArray(files) ? files : [];
+      const backendFiles = Array.isArray(files) ? files : [];
+      const merged = [...localUploads];
+      for (const f of backendFiles) {
+        if (!merged.some(m => m.id === f.id || m.original_filename === f.original_filename)) {
+          merged.push(f);
+        }
+      }
+      this.studyFiles = merged;
       if (typeof ARISE_DATA !== 'undefined') {
         const pageLookup = {
           "Course_101_Data_Structures_Assessment.pdf": 16,
@@ -942,20 +1100,21 @@ const AriseState = {
           "Course_401_Combinatorics_Crypto_Assessment.pdf": 16
         };
         ARISE_DATA.studyLibrary = this.studyFiles.map(f => {
-          const pg = f.page_count || pageLookup[f.original_filename] || 16;
+          const pg = f.page_count || f.pages || pageLookup[f.original_filename] || 16;
           const sz = f.size_bytes || 0;
           const formattedSize = sz >= 1048576 ? `${(sz / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(sz / 1024))} KB`;
           return {
             id: f.id,
-            title: f.original_filename,
-            original_filename: f.original_filename,
-            subject: 'Self Study Material',
+            title: f.original_filename || f.title,
+            original_filename: f.original_filename || f.title,
+            subject: f.subject || 'Self Study Material',
             pages: pg,
             fileSize: formattedSize,
-            lastOpened: 'Just now',
+            lastOpened: f.lastOpened || 'Just now',
             created_at: f.created_at,
             storage_key: f.storage_key,
-            blobUrl: f.blobUrl || null
+            blobUrl: f.blobUrl || null,
+            isUploaded: f.isUploaded || String(f.id).startsWith('study-')
           };
         });
       }
@@ -966,7 +1125,8 @@ const AriseState = {
     } catch (err) {
       this.studyFilesLoaded = true;
       this.studyLoading = false;
-      return this.studyFiles || [];
+      this.studyFiles = [...localUploads];
+      return this.studyFiles;
     }
   },
 
@@ -992,116 +1152,137 @@ const AriseState = {
       if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
         blobUrl = URL.createObjectURL(file);
       }
-      const text = await file.text();
-      const pageMatches = text.match(/\/Type\s*\/Page\b/g);
-      if (pageMatches && pageMatches.length > 0) {
-        detectedPages = pageMatches.length;
-      } else {
-        const countMatch = text.match(/\/Count\s+(\d+)/);
-        if (countMatch && parseInt(countMatch[1], 10) > 0) {
-          detectedPages = parseInt(countMatch[1], 10);
+      if (typeof file.text === 'function') {
+        const text = await file.text();
+        const pageMatches = text.match(/\/Type\s*\/Page\b/g);
+        if (pageMatches && pageMatches.length > 0) {
+          detectedPages = pageMatches.length;
+        } else {
+          const countMatch = text.match(/\/Count\s+(\d+)/);
+          if (countMatch && parseInt(countMatch[1], 10) > 0) {
+            detectedPages = parseInt(countMatch[1], 10);
+          }
         }
       }
     } catch (e) {}
 
-    if (!token) {
-      // Local fallback for guest/unauthenticated demo session
-      const localId = 'study-local-' + Date.now();
-      const localDoc = {
-        id: localId,
-        user_id: 'local',
-        original_filename: file.name,
-        title: file.name,
-        mime_type: 'application/pdf',
-        size_bytes: file.size,
-        pages: detectedPages,
-        blobUrl: blobUrl,
-        created_at: new Date().toISOString()
-      };
-      if (!this.studyFiles) this.studyFiles = [];
-      this.studyFiles.unshift(localDoc);
-      if (typeof ARISE_DATA !== 'undefined') {
-        if (!ARISE_DATA.studyLibrary) ARISE_DATA.studyLibrary = [];
-        ARISE_DATA.studyLibrary.unshift({
-          id: localId,
-          title: file.name,
-          original_filename: file.name,
-          subject: 'Self Study Material',
-          pages: detectedPages,
-          fileSize: file.size >= 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(file.size / 1024))} KB`,
-          lastOpened: 'Just now',
-          created_at: localDoc.created_at,
-          blobUrl: blobUrl
-        });
-      }
-      this.activeDoc = localDoc;
-      this.readerCurrentPage = 1;
-      this.notify();
-      return localDoc;
+    const localId = 'study-upload-' + Date.now();
+    const formattedSize = file.size >= 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(file.size / 1024))} KB`;
+    let docRecord = {
+      id: localId,
+      user_id: token ? 'user' : 'local',
+      original_filename: file.name,
+      title: file.name,
+      mime_type: 'application/pdf',
+      size_bytes: file.size,
+      fileSize: formattedSize,
+      pages: detectedPages,
+      blobUrl: blobUrl,
+      created_at: new Date().toISOString(),
+      isUploaded: true
+    };
+
+    // Save binary blob to AriseStorage (IndexedDB / Memory fallback)
+    if (typeof AriseStorage !== 'undefined') {
+      AriseStorage.saveBlob(localId, file).catch(() => {});
     }
 
-    this.authToken = token;
-    const formData = new FormData();
-    formData.append('file', file);
-
-    let res;
-    try {
-      res = await fetch(`${this.apiBase}/study-files`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-    } catch (fetchErr) {
-      const altBase = this.apiBase.includes('localhost')
-        ? this.apiBase.replace('localhost', '127.0.0.1')
-        : this.apiBase.replace('127.0.0.1', 'localhost');
+    // If authenticated, also attempt to sync with backend if available
+    if (token) {
+      this.authToken = token;
       try {
-        res = await fetch(`${altBase}/study-files`, {
+        const formData = new FormData();
+        formData.append('file', file);
+        let res = await fetch(`${this.apiBase}/study-files`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Authorization': `Bearer ${token}` },
           body: formData
+        }).catch(async (fetchErr) => {
+          if (typeof this.apiBase === 'string' && this.apiBase.includes(':8000')) {
+            const altBase = this.apiBase.includes('localhost')
+              ? this.apiBase.replace('localhost', '127.0.0.1')
+              : this.apiBase.replace('127.0.0.1', 'localhost');
+            return await fetch(`${altBase}/study-files`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` },
+              body: formData
+            });
+          }
+          throw fetchErr;
         });
-        this.apiBase = altBase;
-      } catch (err2) {
-        throw new Error("Unable to connect to ARISE backend server (port 8000). Please ensure backend is running.");
+
+        if (res && res.ok) {
+          const data = await res.json();
+          docRecord.id = data.id || localId;
+          docRecord.storage_key = data.storage_key;
+          if (data.page_count) docRecord.pages = data.page_count;
+          if (typeof AriseStorage !== 'undefined' && docRecord.id !== localId) {
+            AriseStorage.saveBlob(docRecord.id, file).catch(() => {});
+          }
+        }
+      } catch (backendErr) {
+        console.warn('Backend upload skipped (using persistent offline storage):', backendErr.message);
       }
     }
 
-    const data = await res.json();
-    if (!res.ok) {
-      const err = new Error(data.message || data.detail || 'Upload failed');
-      err.status = res.status;
-      throw err;
+    // Persist in localStorage
+    const localUploads = this.getLocalUploadedStudyFiles().filter(x => x.id !== docRecord.id && x.original_filename !== docRecord.original_filename);
+    localUploads.unshift(docRecord);
+    this.saveLocalUploadedStudyFiles(localUploads);
+
+    // Update in-memory state
+    if (!Array.isArray(this.studyFiles)) this.studyFiles = [];
+    this.studyFiles = [docRecord, ...this.studyFiles.filter(x => x.id !== docRecord.id && x.original_filename !== docRecord.original_filename)];
+
+    if (typeof ARISE_DATA !== 'undefined') {
+      if (!Array.isArray(ARISE_DATA.studyLibrary)) ARISE_DATA.studyLibrary = [];
+      const dataDoc = {
+        id: docRecord.id,
+        title: docRecord.title,
+        original_filename: docRecord.original_filename,
+        subject: 'Self Study Material',
+        pages: docRecord.pages,
+        fileSize: docRecord.fileSize,
+        lastOpened: 'Just now',
+        created_at: docRecord.created_at,
+        blobUrl: docRecord.blobUrl,
+        isUploaded: true
+      };
+      ARISE_DATA.studyLibrary = [dataDoc, ...ARISE_DATA.studyLibrary.filter(x => x.id !== docRecord.id && x.title !== docRecord.title)];
     }
 
-    data.blobUrl = blobUrl;
-    data.pages = data.page_count || detectedPages;
-
-    await this.fetchStudyFiles();
-    const found = (this.studyFiles || []).find(f => f.id === data.id);
-    if (found) {
-      found.blobUrl = blobUrl;
-      found.pages = data.pages;
-    }
-    const foundData = (ARISE_DATA.studyLibrary || []).find(f => f.id === data.id);
-    if (foundData) {
-      foundData.blobUrl = blobUrl;
-      foundData.pages = data.pages;
-    }
-    this.activeDoc = found || foundData || data;
+    this.activeDoc = docRecord;
     this.readerCurrentPage = 1;
     this.notify();
-    return data;
+    return docRecord;
   },
 
   async deleteStudyFile(fileId) {
-    const res = await this.apiRequest(`/study-files/${fileId}`, 'DELETE');
-    await this.fetchStudyFiles();
-    return res;
+    // 1. Remove from local storage
+    const currentUploads = this.getLocalUploadedStudyFiles();
+    const filteredUploads = currentUploads.filter(f => f.id !== fileId);
+    this.saveLocalUploadedStudyFiles(filteredUploads);
+
+    // 2. Remove from AriseStorage (IndexedDB)
+    if (typeof AriseStorage !== 'undefined') {
+      AriseStorage.deleteBlob(fileId).catch(() => {});
+    }
+
+    // 3. Remove from in-memory arrays
+    this.studyFiles = (this.studyFiles || []).filter(f => f.id !== fileId);
+    if (typeof ARISE_DATA !== 'undefined' && Array.isArray(ARISE_DATA.studyLibrary)) {
+      ARISE_DATA.studyLibrary = ARISE_DATA.studyLibrary.filter(f => f.id !== fileId);
+    }
+
+    // 4. If connected to backend, request backend deletion
+    if (this.authToken && !String(fileId).startsWith('study-local-') && !String(fileId).startsWith('study-upload-')) {
+      try {
+        await this.apiRequest(`/study-files/${fileId}`, 'DELETE');
+      } catch (_) {}
+    }
+
+    this.notify();
+    return { success: true };
   },
 
   async startStudySession(studyFileId = null) {
