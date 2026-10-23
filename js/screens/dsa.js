@@ -630,6 +630,20 @@ function renderDsaCodingWorkspace() {
           <span style="font-family: var(--font-mono); font-size: 11.5px; color: var(--success); font-weight: 600;">
             +${p.verifiedXp} XP
           </span>
+          ${p.status === 'Solved' 
+            ? `<span class="badge" style="background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                 Solved
+               </span>`
+            : p.status === 'Attempted'
+            ? `<span class="badge" style="background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                 Attempted
+               </span>`
+            : `<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border-default); font-size: 11px; font-weight: 500;">
+                 Unsolved
+               </span>`
+          }
         </div>
 
         <!-- Live Sandbox Judge Status Badge -->
@@ -1551,6 +1565,25 @@ function handleJudgeEvaluationResult(result, p, lang) {
             india: 86
           };
           ARISE_DATA.currentUser.rankDisplay = '#14';
+        }
+
+        // Permanent storage in localStorage for instant dashboard and refresh persistence
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('arise_verified_xp', String(ARISE_DATA.currentUser.verifiedXp));
+            localStorage.setItem('arise_solved_stats', JSON.stringify(ARISE_DATA.currentUser.solvedStats));
+            localStorage.setItem('arise_recent_solves', JSON.stringify(ARISE_DATA.currentUser.recentSolves));
+            if (ARISE_DATA.currentUser.rank) {
+              localStorage.setItem('arise_user_rank', JSON.stringify(ARISE_DATA.currentUser.rank));
+            }
+            if (ARISE_DATA.currentUser.rankDisplay) {
+              localStorage.setItem('arise_user_rank_display', ARISE_DATA.currentUser.rankDisplay);
+            }
+          }
+        } catch (_) {}
+
+        if (typeof syncProblemStatuses === 'function') {
+          syncProblemStatuses();
         }
 
         if (typeof AriseAuth !== 'undefined') {

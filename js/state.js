@@ -669,7 +669,12 @@ const AriseState = {
     try {
       const stats = await this.apiRequest('/me/practice-stats');
       if (stats && typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
-        ARISE_DATA.currentUser.verifiedXp = Number(stats.total_verified_xp || 0);
+        const backendXp = Number(stats.total_verified_xp || 0);
+        let localXp = 0;
+        try {
+          localXp = Number(localStorage.getItem('arise_verified_xp') || 0);
+        } catch (_) {}
+        ARISE_DATA.currentUser.verifiedXp = Math.max(backendXp, localXp);
 
         const validProblemIds = new Set((ARISE_DATA.problems || []).map(p => String(p.id).toUpperCase()));
         const validBackendSolves = (stats.problems_solved || []).filter(id => validProblemIds.has(String(id).toUpperCase()));
@@ -702,6 +707,10 @@ const AriseState = {
         ARISE_DATA.currentUser.solvedStats.medium = actualSolvedProbs.filter(p => p.difficulty === 'Medium').length;
         ARISE_DATA.currentUser.solvedStats.hard = actualSolvedProbs.filter(p => p.difficulty === 'Hard').length;
 
+        if (actualSolvedProbs.length > 0 && (!ARISE_DATA.currentUser.verifiedXp || ARISE_DATA.currentUser.verifiedXp === 0)) {
+          ARISE_DATA.currentUser.verifiedXp = actualSolvedProbs.reduce((sum, p) => sum + (p.verifiedXp || 40), 0);
+        }
+
         if (Array.isArray(ARISE_DATA.topics)) {
           ARISE_DATA.topics.forEach(t => {
             const tNameLower = (t.name || '').trim().toLowerCase();
@@ -720,6 +729,8 @@ const AriseState = {
           if (typeof localStorage !== 'undefined') {
             const cleanArray = Array.from(solvedSet);
             localStorage.setItem('arise_solved_problem_ids', JSON.stringify(cleanArray));
+            localStorage.setItem('arise_verified_xp', String(ARISE_DATA.currentUser.verifiedXp));
+            localStorage.setItem('arise_solved_stats', JSON.stringify(ARISE_DATA.currentUser.solvedStats));
           }
         } catch (_) {}
         if (typeof syncLeaderboardWithUser === 'function') {
