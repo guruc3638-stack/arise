@@ -204,17 +204,8 @@ function renderSidebarNavigation() {
         `).join('')}
       </nav>
 
-      <!-- Sidebar Footer with Theme, Collapse Action and Logout -->
+      <!-- Sidebar Footer with Collapse Action and Logout (Single theme toggle is upside in navbar) -->
       <div class="sidebar-footer">
-        <button class="collapse-btn theme-toggle-sidebar-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode">
-          ${(typeof AriseTheme !== 'undefined' && AriseTheme.current === 'light') ? `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6366F1;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-            <span class="nav-label">${isCollapsed ? '' : 'Night Mode'}</span>
-          ` : `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FBBF24;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-            <span class="nav-label">${isCollapsed ? '' : 'Day Mode'}</span>
-          `}
-        </button>
         <button class="collapse-btn" onclick="toggleSidebarCollapse()" title="Toggle Sidebar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
           <span class="nav-label">${isCollapsed ? '' : 'Collapse Rail'}</span>
@@ -324,14 +315,14 @@ function renderAppHeader() {
       </div>
 
       <div class="header-right">
-        <!-- Day / Night Mode Toggle -->
-        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode" aria-label="Toggle theme">
+        <!-- Single Theme Toggle in Navbar Header -->
+        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="${(typeof AriseTheme !== 'undefined' && AriseTheme.current === 'light') ? 'Switch to Night mode' : 'Switch to Day mode'}" aria-label="Toggle theme">
           ${(typeof AriseTheme !== 'undefined' && AriseTheme.current === 'light') ? `
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6366F1;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-            <span>Night</span>
+            <span>Night Mode</span>
           ` : `
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FBBF24;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-            <span>Day</span>
+            <span>Day Mode</span>
           `}
         </button>
 
@@ -350,9 +341,9 @@ function renderAppHeader() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 4px; opacity: 0.7;"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
 
-          <div id="user-header-dropdown" class="glass-card" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); width: 230px; border: 1px solid var(--border-default); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 8px; z-index: 1000; background: #0E1322;">
+          <div id="user-header-dropdown" class="glass-card" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); width: 230px; border: 1px solid var(--border-default); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 8px; z-index: 1000; background: var(--surface-elevated);">
             <div style="padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px;">
-              <div style="font-size: 13px; font-weight: 600; color: #FFFFFF;">${user.displayName}</div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${user.displayName}</div>
               <div class="font-mono" style="font-size: 11px; color: #A78BFA; margin-top: 2px;">${user.uid}</div>
             </div>
             <button class="btn btn-ghost btn-sm" onclick="AriseState.setScreen('profile'); closeUserDropdown();" style="width: 100%; justify-content: flex-start; gap: 8px; font-size: 13px;">

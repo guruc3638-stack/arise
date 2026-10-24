@@ -29,7 +29,7 @@ function renderDesignSystemView() {
           <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #A78BFA; margin-bottom: 4px;">
             FIGMA ARCHITECTURE
           </div>
-          <h2 style="font-size: 16px; font-weight: 700; color: #FFFFFF;">ARISE Design System</h2>
+          <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">ARISE Design System</h2>
         </div>
 
         <nav style="display: flex; flex-direction: column; gap: 3px;">
@@ -96,7 +96,7 @@ function renderDsPage01Cover() {
       <div class="grid-12">
         <div class="col-6">
           <div class="glass-card">
-            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #FFFFFF;">System Axioms & Integrity Rules</h3>
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">System Axioms & Integrity Rules</h3>
             <ul style="padding-left: 20px; font-size: 13.5px; line-height: 1.8; color: var(--text-secondary);">
               <li><b>Strict DSA XP:</b> XP and rank come ONLY from verified submissions confirmed by the judge engine.</li>
               <li><b>Zero Vanity Time XP:</b> Reading PDFs or watching lessons never awards competitive rank XP.</li>
@@ -109,7 +109,7 @@ function renderDsPage01Cover() {
 
         <div class="col-6">
           <div class="glass-card">
-            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #FFFFFF;">Art Direction Principles</h3>
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">Art Direction Principles</h3>
             <ul style="padding-left: 20px; font-size: 13.5px; line-height: 1.8; color: var(--text-secondary);">
               <li><b>Selective Glass:</b> Glass is reserved for heroes, selected pills, and modals.</li>
               <li><b>Calm Dense Surfaces:</b> Code, tabular data, and test cases use opaque #0B0F1C surfaces for maximum contrast.</li>
@@ -145,7 +145,7 @@ function renderDsPage02Foundations() {
     <div style="display: flex; flex-direction: column; gap: var(--space-8);">
       <div>
         <div class="hero-pill-badge" style="margin-bottom: 8px;">PAGE 02 — DESIGN FOUNDATIONS</div>
-        <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF;">Color, Typography, Spacing & Glass Tokens</h1>
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary);">Color, Typography, Spacing & Glass Tokens</h1>
         <p class="text-small text-muted">All tokens are defined as CSS Custom Properties and verified WCAG 2.2 AA compliant.</p>
       </div>
 
@@ -251,7 +251,7 @@ function renderDsPage03Components() {
     <div style="display: flex; flex-direction: column; gap: var(--space-8);">
       <div>
         <div class="hero-pill-badge" style="margin-bottom: 8px;">PAGE 03 — COMPONENT LIBRARY</div>
-        <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF;">Interactive Component Variant Matrix</h1>
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary);">Interactive Component Variant Matrix</h1>
         <p class="text-small text-muted">Complete states: Default, Hover, Focus (2px violet ring), Active, Disabled, Loading.</p>
       </div>
 
@@ -355,7 +355,7 @@ function renderDsDocPage(num, title, summary) {
   return `
     <div style="display: flex; flex-direction: column; gap: var(--space-6);">
       <div class="hero-pill-badge">PAGE ${num} — MODULE BLUEPRINT</div>
-      <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF;">${title}</h1>
+      <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary);">${title}</h1>
       <p style="font-size: 15px; color: var(--text-secondary); line-height: 1.7; max-width: 800px;">${summary}</p>
 
       <div class="glass-card">
@@ -377,7 +377,7 @@ function renderDsPage12Handoff() {
     <div style="display: flex; flex-direction: column; gap: var(--space-8);">
       <div>
         <div class="hero-pill-badge" style="margin-bottom: 8px;">PAGE 12 — DEVELOPER HANDOFF</div>
-        <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF;">Token-to-Tailwind / CSS Mapping Table</h1>
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary);">Token-to-Tailwind / CSS Mapping Table</h1>
         <p class="text-small text-muted">Complete mapping of semantic design tokens to CSS variables and Tailwind config keys.</p>
       </div>
 

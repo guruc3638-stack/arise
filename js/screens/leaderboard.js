@@ -166,7 +166,7 @@ function renderGlobalLeaderboard(scope, students, user) {
               <div class="text-small text-muted" style="max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 ${escapeHtml(st.college)}
               </div>
-              <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: #FFFFFF;">
+              <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--text-primary);">
                 ${Number(st.xp || 0).toLocaleString()} <span style="font-size: 12px; color: #A78BFA;">XP</span>
               </div>
               <div style="font-size: 11px; color: var(--text-muted);">
@@ -227,7 +227,7 @@ function renderGlobalLeaderboard(scope, students, user) {
                 </span>
               </td>
               <td style="text-align: right;">
-                <span class="font-mono" style="font-weight: 700; color: #FFFFFF; font-size: 14px;">
+                <span class="font-mono" style="font-weight: 700; color: var(--text-primary); font-size: 14px;">
                   ${Number(st.xp || 0).toLocaleString()}
                 </span>
               </td>
@@ -501,7 +501,7 @@ function renderFriendsLeaderboard() {
                   </span>
                 </td>
                 <td style="text-align: right;">
-                  <span class="font-mono" style="font-weight: 700; color: #FFFFFF; font-size: 14px;">
+                  <span class="font-mono" style="font-weight: 700; color: var(--text-primary); font-size: 14px;">
                     ${Number(f.verifiedXp || 0).toLocaleString()}
                   </span>
                 </td>

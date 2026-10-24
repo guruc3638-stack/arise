@@ -40,14 +40,14 @@ function renderLandingPage() {
         </nav>
 
         <div style="display: flex; align-items: center; gap: 10px;">
-          <!-- Day / Night Mode Toggle -->
-          <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode" aria-label="Toggle Night/Day theme">
+          <!-- Single Theme Toggle in Top Navbar -->
+          <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="${isLight ? 'Switch to Night mode' : 'Switch to Day mode'}" aria-label="Toggle theme">
             ${isLight ? `
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6366F1;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-              <span>Night</span>
+              <span>Night Mode</span>
             ` : `
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FBBF24;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-              <span>Day</span>
+              <span>Day Mode</span>
             `}
           </button>
 
@@ -310,9 +310,6 @@ function renderLandingPage() {
         </div>
 
         <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-          <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode" style="padding: 4px 10px; font-size: 11.5px;">
-            ${isLight ? '🌙 Night Mode' : '☀️ Day Mode'}
-          </button>
           <a href="#/login" onclick="event.preventDefault(); AriseAuth.navigateTo('login')" style="color: var(--text-muted); font-size: 12px;">Log In</a>
           <a href="#/signup" onclick="event.preventDefault(); AriseAuth.navigateTo('signup')" style="color: var(--text-muted); font-size: 12px;">Register</a>
         </div>
@@ -331,8 +328,8 @@ function renderSignUpScreen() {
         <button class="btn btn-ghost btn-sm" onclick="AriseAuth.navigateTo('landing')" style="gap: 6px;">
           ← Back to Home
         </button>
-        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode">
-          ${isLight ? '🌙 Night' : '☀️ Day'}
+        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="${isLight ? 'Switch to Night mode' : 'Switch to Day mode'}">
+          ${isLight ? '🌙 Night Mode' : '☀️ Day Mode'}
         </button>
       </div>
 
@@ -400,8 +397,8 @@ function renderLoginScreen() {
         <button class="btn btn-ghost btn-sm" onclick="AriseAuth.navigateTo('landing')" style="gap: 6px;">
           ← Back to Home
         </button>
-        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="Toggle Day/Night mode">
-          ${isLight ? '🌙 Night' : '☀️ Day'}
+        <button class="theme-toggle-btn" onclick="AriseTheme.toggle()" title="${isLight ? 'Switch to Night mode' : 'Switch to Day mode'}">
+          ${isLight ? '🌙 Night Mode' : '☀️ Day Mode'}
         </button>
       </div>
 
@@ -460,7 +457,7 @@ function renderVerifyEmailScreen() {
         <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(139,92,246,0.15); border: 2px solid #8B5CF6; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #C4B5FD;">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
         </div>
-        <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px;">Check Your Inbox</h1>
+        <h1 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Check Your Inbox</h1>
         <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-5);">
           A verification link has been sent to <b>${email}</b>. Click the link to complete verification.
         </p>
@@ -497,7 +494,7 @@ function renderOnboardingScreen() {
         </div>
 
         <div style="text-align: center; margin-bottom: var(--space-4);">
-          <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF;">Student Profile Setup</h1>
+          <h1 style="font-size: 22px; font-weight: 700; color: var(--text-primary);">Student Profile Setup</h1>
           <p class="text-small text-muted" style="margin-top: 4px;">Configure your public identity and privacy toggles</p>
         </div>
 
@@ -524,7 +521,7 @@ function renderOnboardingScreen() {
               Your System-Generated ARISE UID (Immutable)
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span class="font-mono" style="font-size: 16px; font-weight: 700; color: #FFFFFF;">${currentUid}</span>
+              <span class="font-mono" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">${currentUid}</span>
               <button type="button" class="btn btn-secondary btn-sm" onclick="copyAriseUid('${currentUid}')">Copy</button>
             </div>
             <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px;">
@@ -538,12 +535,12 @@ function renderOnboardingScreen() {
               Leaderboard Privacy Controls
             </div>
 
-            <label style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: #FFFFFF; cursor: pointer;">
+            <label style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-primary); cursor: pointer;">
               <input type="checkbox" id="setup-show-rank" checked style="accent-color: var(--accent-purple); width: 16px; height: 16px;" />
               <span>Show DSA rank on public leaderboards</span>
             </label>
 
-            <label style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: #FFFFFF; cursor: pointer;">
+            <label style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-primary); cursor: pointer;">
               <input type="checkbox" id="setup-show-progress" checked style="accent-color: var(--accent-purple); width: 16px; height: 16px;" />
               <span>Show verified solved problems and attempt counts</span>
             </label>

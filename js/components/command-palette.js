@@ -12,14 +12,14 @@ function openCommandPalette() {
   }
 
   modal.innerHTML = `
-    <div class="modal-window" style="max-width: 600px; padding: 0; background: #0E1424; border: 1px solid var(--border-strong); box-shadow: 0 25px 60px rgba(0,0,0,0.85), var(--shadow-glow);">
-      <div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border-default); background: rgba(255,255,255,0.02);">
+    <div class="modal-window" style="max-width: 600px; padding: 0; background: var(--surface-elevated); border: 1px solid var(--border-strong); box-shadow: 0 25px 60px rgba(0,0,0,0.85), var(--shadow-glow);">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border-default); background: var(--surface-glass);">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-primary);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <input id="cmd-palette-input" type="text" placeholder="Type a command, problem, screen or topic..." style="flex: 1; background: transparent; border: none; outline: none; font-size: 15px; color: var(--text-primary); font-family: var(--font-ui);" autofocus />
-        <span class="kbd-shortcut" style="font-size: 11px; padding: 2px 6px; background: rgba(255,255,255,0.08); border-radius: 4px; color: var(--text-muted); font-family: var(--font-mono);">ESC</span>
+        <span class="kbd-shortcut" style="font-size: 11px; padding: 2px 6px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 4px; color: var(--text-muted); font-family: var(--font-mono);">ESC</span>
       </div>
       <div id="cmd-palette-results" style="max-height: 380px; overflow-y: auto; padding: 8px 12px;"></div>
-      <div style="padding: 10px 16px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); background: rgba(8,11,20,0.5);">
+      <div style="padding: 10px 16px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); background: var(--bg-tertiary);">
         <span>Navigation: <b style="color: var(--text-secondary);">↑ ↓ to navigate</b></span>
         <span>Select: <b style="color: var(--text-secondary);">↵ to select</b></span>
         <span>Close: <b style="color: var(--text-secondary);">ESC</b></span>
@@ -80,7 +80,7 @@ function openCommandPalette() {
 
     resultsContainer.innerHTML = filtered.map((item, idx) => `
       <div class="cmd-item" data-idx="${idx}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer; transition: background 0.15s; margin-bottom: 2px;"
-        onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+        onmouseover="this.style.background='var(--surface-glass-hover)'"
         onmouseout="this.style.background='transparent'">
         <div style="display: flex; align-items: center; gap: 10px;">
           <span style="color: var(--accent-primary); display: flex;">
@@ -88,7 +88,7 @@ function openCommandPalette() {
           </span>
           <span style="font-size: 13.5px; color: var(--text-primary); font-weight: 500;">${item.title}</span>
         </div>
-        <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-xs); background: rgba(255,255,255,0.05); color: var(--text-muted); font-family: var(--font-mono);">${item.category}</span>
+        <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-xs); background: var(--bg-tertiary); border: 1px solid var(--border-subtle); color: var(--text-muted); font-family: var(--font-mono);">${item.category}</span>
       </div>
     `).join('');
 

@@ -182,7 +182,7 @@ function renderSelfStudyLibrary() {
           <!-- Cumulative Study Time -->
           <div>
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Cumulative Study Time</div>
-            <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: #FFFFFF;">
+            <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: var(--text-primary);">
               ${metrics.totalHours.toFixed(1)} <span style="font-size: 13px; color: var(--text-muted);">hours</span>
             </div>
           </div>
@@ -209,7 +209,7 @@ function renderSelfStudyLibrary() {
           <!-- Logged Sessions -->
           <div>
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Logged Sessions</div>
-            <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: #FFFFFF;">
+            <div class="font-mono tabular-nums" style="font-size: 20px; font-weight: 700; color: var(--text-primary);">
               ${metrics.sessionCount}
             </div>
           </div>
@@ -295,7 +295,7 @@ function renderSelfStudyLibrary() {
           <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); display: flex; align-items: center; justify-content: center; color: var(--accent-primary); font-size: 24px;">
             📄
           </div>
-          <h2 style="font-size: 18px; font-weight: 700; color: #FFFFFF;">No study documents uploaded yet</h2>
+          <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary);">No study documents uploaded yet</h2>
           <p style="font-size: 13.5px; color: var(--text-secondary); max-width: 440px; line-height: 1.6;">
             Upload your personal academic papers, algorithm proofs, or lecture PDFs (up to 10MB) for private, distraction-free reading with integrated focus timer.
           </p>
@@ -751,7 +751,7 @@ function renderPdfReaderScreen() {
               max="${totalPages}" 
               value="${currentPage}" 
               onchange="AriseState.setReaderPage(this.value)" 
-              style="width: 48px; padding: 2px 4px; text-align: center; background: #0B0F1C; border: 1px solid var(--border-strong); border-radius: 4px; color: #FFFFFF; font-family: var(--font-mono); font-weight: 700; font-size: 12px;"
+              style="width: 48px; padding: 2px 4px; text-align: center; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: 4px; color: var(--text-primary); font-family: var(--font-mono); font-weight: 700; font-size: 12px;"
               title="Type page number and press Enter"
             />
             of ${totalPages}
@@ -804,7 +804,7 @@ function renderPdfReaderScreen() {
           <!-- Study Timer -->
           <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-default); padding: 4px 10px; border-radius: var(--radius-full);">
             <div style="width: 8px; height: 8px; border-radius: 50%; background: ${AriseState.timerRunning ? 'var(--success)' : 'var(--warning)'}; box-shadow: 0 0 6px ${AriseState.timerRunning ? 'var(--success)' : 'var(--warning)'};"></div>
-            <span id="study-timer-display" class="font-mono tabular-nums" style="font-weight: 700; font-size: 12.5px; color: #FFFFFF;">${timeFormatted}</span>
+            <span id="study-timer-display" class="font-mono tabular-nums" style="font-weight: 700; font-size: 12.5px; color: var(--text-primary);">${timeFormatted}</span>
             <button class="btn-copy" onclick="toggleStudyTimer()" title="${AriseState.timerRunning ? 'Pause Timer' : 'Resume Timer'}">
               ${AriseState.timerRunning 
                 ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
@@ -901,7 +901,7 @@ async function finishStudySession() {
         <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: var(--space-4); display: flex; justify-content: space-between; align-items: center;">
           <div>
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Session Duration</div>
-            <div class="font-mono tabular-nums" style="font-size: 26px; font-weight: 700; color: #FFFFFF;">${mins} Minutes</div>
+            <div class="font-mono tabular-nums" style="font-size: 26px; font-weight: 700; color: var(--text-primary);">${mins} Minutes</div>
           </div>
           <div style="text-align: right;">
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Material Studied</div>
@@ -914,13 +914,13 @@ async function finishStudySession() {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div style="padding: 10px 12px; border-radius: var(--radius-sm); background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.25);">
             <div style="font-size: 10px; text-transform: uppercase; color: var(--accent-cyan); font-weight: 700;">Today's Total Study Time</div>
-            <div class="font-mono" style="font-size: 16px; font-weight: 700; color: #FFFFFF; margin-top: 2px;">
+            <div class="font-mono" style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
               ${metrics.todayDisplay}
             </div>
           </div>
           <div style="padding: 10px 12px; border-radius: var(--radius-sm); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);">
             <div style="font-size: 10px; text-transform: uppercase; color: #F59E0B; font-weight: 700;">Active Daily Streak</div>
-            <div class="font-mono" style="font-size: 16px; font-weight: 700; color: #FFFFFF; margin-top: 2px;">
+            <div class="font-mono" style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
               ${metrics.dailyStreak} ${metrics.dailyStreak === 1 ? 'Day' : 'Days'}
             </div>
           </div>
@@ -1025,7 +1025,7 @@ function openUploadDocumentModal() {
         <div id="upload-file-status" style="display: none; padding: 12px; border-radius: var(--radius-md); background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div id="upload-file-name" style="font-size: 13px; font-weight: 600; color: #FFFFFF;">Selected File</div>
+              <div id="upload-file-name" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Selected File</div>
               <div id="upload-file-size" style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">0 KB</div>
             </div>
             <span class="badge" style="background: var(--success-bg); color: var(--success);">Ready</span>

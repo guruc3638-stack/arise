@@ -175,10 +175,10 @@ function renderCourseDetail() {
       <div class="glass-hero">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-4);">
           <div style="max-width: 720px;">
-            <span class="badge" style="background: rgba(139,92,246,0.25); color: #FFFFFF; margin-bottom: 8px;">
+            <span class="badge" style="background: rgba(139,92,246,0.15); color: var(--accent-primary); border: 1px solid rgba(139,92,246,0.3); margin-bottom: 8px;">
               ${c.category} Track
             </span>
-            <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin-bottom: 10px;">
+            <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px;">
               ${c.title}
             </h1>
             <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-4);">
@@ -328,7 +328,7 @@ function renderLessonPlayer() {
             </span>
           </div>
 
-          <h1 style="font-size: 24px; font-weight: 700; color: #FFFFFF; margin-bottom: 16px;">
+          <h1 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">
             ${activeLesson.title}
           </h1>
 
@@ -426,12 +426,12 @@ async function markCurrentLessonCompleted(lessonId) {
 function formatLessonMarkdown(md) {
   if (!md) return '';
   return md
-    .replace(/^# (.*$)/gim, '<h2 style="font-size: 20px; font-weight: 700; color: #FFFFFF; margin-bottom: 12px; margin-top: 16px;">$1</h2>')
-    .replace(/^## (.*$)/gim, '<h3 style="font-size: 17px; font-weight: 600; color: #E2E8F0; margin-bottom: 8px; margin-top: 12px;">$1</h3>')
-    .replace(/^### (.*$)/gim, '<h4 style="font-size: 15px; font-weight: 600; color: #CBD5E1; margin-bottom: 6px; margin-top: 8px;">$1</h4>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong style="color: #FFFFFF;">$1</strong>')
+    .replace(/^# (.*$)/gim, '<h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; margin-top: 16px;">$1</h2>')
+    .replace(/^## (.*$)/gim, '<h3 style="font-size: 17px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; margin-top: 12px;">$1</h3>')
+    .replace(/^### (.*$)/gim, '<h4 style="font-size: 15px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; margin-top: 8px;">$1</h4>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong style="color: var(--text-primary);">$1</strong>')
     .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    .replace(/`([^`]+)`/gim, '<code style="background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 13px; color: #A78BFA;">$1</code>')
+    .replace(/`([^`]+)`/gim, '<code style="background: rgba(124, 58, 237, 0.1); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 13px; color: var(--accent-primary); border: 1px solid var(--border-subtle);">$1</code>')
     .replace(/^\- (.*$)/gim, '<li style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 6px;">$1</li>')
     .replace(/\n\n/gim, '<p style="font-size: 14.5px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 16px;"></p>');
 }
@@ -484,7 +484,7 @@ function renderFinalAssessmentQuiz() {
           <span class="badge" style="background: rgba(251,191,36,0.12); color: var(--warning); border: 1px solid rgba(251,191,36,0.3); margin-bottom: 4px;">
             Final Comprehensive Assessment
           </span>
-          <h2 style="font-size: 22px; font-weight: 800; color: #FFFFFF;">
+          <h2 style="font-size: 22px; font-weight: 800; color: var(--text-primary);">
             ${finalTest.title || 'Course Final Assessment'}
           </h2>
           <p class="text-small text-muted">
@@ -510,7 +510,7 @@ function renderFinalAssessmentQuiz() {
               <div style="font-size: 12px; font-weight: 700; color: #A78BFA; text-transform: uppercase; margin-bottom: 8px;">
                 Question ${qIdx + 1} of ${questions.length}
               </div>
-              <h3 style="font-size: 15.5px; font-weight: 600; color: #FFFFFF; line-height: 1.5; margin-bottom: var(--space-4);">
+              <h3 style="font-size: 15.5px; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: var(--space-4);">
                 ${q.prompt}
               </h3>
 
@@ -598,7 +598,7 @@ function renderQuizResults() {
           ${passed ? '✓' : '✕'}
         </div>
 
-        <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF;">
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary);">
           ${passed ? 'Assessment Passed!' : 'Course Not Yet Complete'}
         </h1>
 

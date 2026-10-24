@@ -49,7 +49,7 @@ function renderProfileView() {
           </div>
           <div>
             <div style="display: flex; align-items: center; gap: 10px;">
-              <h1 style="font-size: 24px; font-weight: 700; color: #FFFFFF;">${user.displayName}</h1>
+              <h1 style="font-size: 24px; font-weight: 700; color: var(--text-primary);">${user.displayName}</h1>
               <span class="badge" style="background: rgba(139,92,246,0.2); color: #C4B5FD;">Verified Student</span>
             </div>
             <div style="font-size: 13.5px; color: var(--text-secondary); margin-top: 2px;">
@@ -84,7 +84,7 @@ function renderProfileView() {
         <div class="col-4">
           <div class="metric-card">
             <span class="metric-label">Verified DSA XP</span>
-            <span class="metric-value" style="color: #FFFFFF;">
+            <span class="metric-value" style="color: var(--text-primary);">
               ${user.verifiedXp.toLocaleString()} <span style="font-size: 16px; color: #A78BFA;">XP</span>
             </span>
             <span class="metric-meta text-muted" style="font-size: 11px;">Judge confirmed submissions</span>
@@ -94,7 +94,7 @@ function renderProfileView() {
         <div class="col-4">
           <div class="metric-card">
             <span class="metric-label">Overall State Rank</span>
-            <span class="metric-value font-mono" style="color: #FFFFFF;">${currentRankDisplay}</span>
+            <span class="metric-value font-mono" style="color: var(--text-primary);">${currentRankDisplay}</span>
             <span class="metric-meta" style="color: ${isCleanAccount ? 'var(--text-muted)' : 'var(--success)'}; font-size: 11px;">
               ${isCleanAccount ? 'Solve problems to qualify for state rank' : 'Rank ▲ in Maharashtra'}
             </span>
@@ -288,7 +288,7 @@ function openBadgeDetail(badgeId) {
         <div style="width: 64px; height: 64px; border-radius: 50%; background: ${isEarned ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)'}; border: 2px solid ${isEarned ? '#8B5CF6' : 'rgba(255,255,255,0.1)'}; display: flex; align-items: center; justify-content: center; font-size: 28px; color: ${isEarned ? '#C4B5FD' : 'var(--text-muted)'};">
           ${isEarned ? '★' : '🔒'}
         </div>
-        <h2 style="font-size: 20px; font-weight: 700; color: #FFFFFF;">${b.name}</h2>
+        <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary);">${b.name}</h2>
         <p style="font-size: 13.5px; color: var(--text-secondary); max-width: 420px; line-height: 1.6;">
           ${descText}
         </p>

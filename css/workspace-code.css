@@ -117,7 +117,7 @@
 }
 
 .panel-tab-btn.active {
-  color: #FFFFFF;
+  color: var(--text-primary);
   border-bottom-color: var(--accent-primary);
   background: rgba(255, 255, 255, 0.03);
 }

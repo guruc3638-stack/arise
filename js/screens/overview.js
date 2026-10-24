@@ -122,7 +122,7 @@ function renderOverviewDashboard() {
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <div style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
                   <span>Rank in <b style="color: var(--text-primary); text-transform: capitalize;">${currentScope}</b>:</span>
-                  <span style="font-size: 18px; font-weight: 700; color: #FFFFFF; font-family: var(--font-mono);">${currentRankDisplay}</span>
+                  <span style="font-size: 18px; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono);">${currentRankDisplay}</span>
                   ${!isCleanAccount && user.rankMovement ? `
                     <span style="font-size: 12px; font-weight: 600; color: var(--success); display: inline-flex; align-items: center; gap: 2px;">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
@@ -374,11 +374,11 @@ function renderOverviewDashboard() {
               <!-- User Highlighted Row (Rule 4: Shows Unranked & 0 XP for clean accounts) -->
               <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: var(--radius-sm); background: rgba(139,92,246,0.18); border: 1px solid rgba(139,92,246,0.4); margin-top: 4px; font-size: 12.5px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-family: var(--font-mono); font-weight: 700; color: #C4B5FD;">${currentRankDisplay}</span>
-                  <span style="color: #FFFFFF; font-weight: 600;">You</span>
+                  <span style="font-family: var(--font-mono); font-weight: 700; color: #A78BFA;">${currentRankDisplay}</span>
+                  <span style="color: var(--text-primary); font-weight: 600;">You</span>
                   <span class="badge" style="font-size: 9px; padding: 1px 4px; background: rgba(139,92,246,0.3); color: #DDD6FE;">${user.college ? user.college.split(' ')[0] : 'STUDENT'}</span>
                 </div>
-                <span style="font-family: var(--font-mono); color: #FFFFFF; font-weight: 700; font-size: 12px;">${user.verifiedXp} XP</span>
+                <span style="font-family: var(--font-mono); color: var(--text-primary); font-weight: 700; font-size: 12px;">${user.verifiedXp} XP</span>
               </div>
             </div>
           </div>

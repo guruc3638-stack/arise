@@ -18,10 +18,10 @@ function toggleNotificationsDrawer() {
   const unreadCount = notifs.filter(n => !n.read).length;
 
   drawer.innerHTML = `
-    <div class="modal-window" style="max-width: 480px; height: 90vh; display: flex; flex-direction: column; background: #0B0F19; border: 1px solid var(--border-default); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
+    <div class="modal-window" style="max-width: 480px; height: 90vh; display: flex; flex-direction: column; background: var(--surface-elevated); border: 1px solid var(--border-default); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
       <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <h3 style="font-size: 17px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.01em;">Notifications</h3>
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em;">Notifications</h3>
           ${unreadCount > 0 ? `<span class="badge" style="background: rgba(139,92,246,0.25); color: #DDD6FE; font-size: 11px; padding: 2px 8px;">${unreadCount} New</span>` : ''}
         </div>
         <button class="btn btn-ghost btn-sm" onclick="closeNotificationsDrawer()" style="padding: 4px 8px; color: var(--text-muted);" title="Close">
@@ -35,7 +35,7 @@ function toggleNotificationsDrawer() {
             <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); display: flex; align-items: center; justify-content: center; font-size: 24px;">
               🔔
             </div>
-            <div style="font-weight: 700; color: #FFFFFF; font-size: 15px;">No notifications yet</div>
+            <div style="font-weight: 700; color: var(--text-primary); font-size: 15px;">No notifications yet</div>
             <p style="font-size: 12.5px; color: var(--text-secondary); max-width: 300px; line-height: 1.5; margin: 0;">
               When you send friend requests to student IDs, connect with peers, or conquer solve & course milestones, notifications will appear here.
             </p>
@@ -80,7 +80,7 @@ function toggleNotificationsDrawer() {
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                   <span style="font-size: 16px;">${iconHtml}</span>
-                  <span style="font-weight: 700; font-size: 13.5px; color: ${n.read ? 'var(--text-secondary)' : '#FFFFFF'};">${escapeNotifText(n.title)}</span>
+                  <span style="font-weight: 700; font-size: 13.5px; color: ${n.read ? 'var(--text-secondary)' : 'var(--text-primary)'};">${escapeNotifText(n.title)}</span>
                   ${badgeHtml}
                 </div>
                 <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); white-space: nowrap;">${n.time || 'Just now'}</span>

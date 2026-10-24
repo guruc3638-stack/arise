@@ -826,7 +826,7 @@ function renderProblemDescriptionTab(p) {
       <!-- Title & Metadata -->
       <div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
-          <h2 style="font-size: 20px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.01em;">${p.title}</h2>
+          <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em;">${p.title}</h2>
           <span class="font-mono" style="font-size: 12px; color: #A78BFA; font-weight: 600;">${p.id}</span>
         </div>
         
@@ -944,7 +944,7 @@ function renderHintsTabContent(p) {
           <div class="hint-confirm-box">
             <div style="display: flex; align-items: center; gap: 8px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FBBF24;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-              <span style="font-weight: 700; font-size: 13px; color: #FFFFFF;">
+              <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">
                 Reveal next hint? (${hintLabels[revealedCount].title})
               </span>
             </div>
@@ -993,7 +993,7 @@ function renderSolutionTabContent(p) {
           </div>
 
           <div>
-            <h3 style="font-size: 17px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">
+            <h3 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
               Official ARISE Solution is Locked
             </h3>
             <p style="font-size: 13px; color: var(--text-muted); max-width: 380px; margin: 0 auto; line-height: 1.5;">
@@ -1012,7 +1012,7 @@ function renderSolutionTabContent(p) {
 
           ${isConfirmPending ? `
             <div class="hint-confirm-box" style="width: 100%; max-width: 440px; text-align: left;">
-              <div style="font-weight: 700; font-size: 13px; color: #FFFFFF;">
+              <div style="font-weight: 700; font-size: 13px; color: var(--text-primary);">
                 Confirm: Unlock Official Solution?
               </div>
               <p style="font-size: 12px; color: var(--text-secondary); margin: 0;">
@@ -1061,7 +1061,7 @@ function renderSolutionTabContent(p) {
 
         <!-- Approach Name -->
         <div>
-          <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px;">
+          <h3 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
             ${escapeHtml(sol ? sol.approachName : "Optimal Algorithmic Solution")}
           </h3>
           <p style="font-size: 13.5px; line-height: 1.7; color: var(--text-secondary);">
@@ -1137,7 +1137,7 @@ function renderSubmissionsTabContent(p) {
   return `
     <div class="submissions-container">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="font-size: 15px; font-weight: 700; color: #FFFFFF;">Your Submission History</h3>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary);">Your Submission History</h3>
         <span class="font-mono text-muted" style="font-size: 11.5px;">${subs.length} attempts recorded</span>
       </div>
 
@@ -1431,10 +1431,10 @@ function formatProblemDescription(desc) {
 function formatMarkdownInline(str) {
   if (!str) return '';
   return str
-    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong style="color: #FFFFFF;"><em>$1</em></strong>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #FFFFFF;">$1</strong>')
+    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong style="color: var(--text-primary);"><em>$1</em></strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--text-primary);">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em style="color: var(--accent-cyan);">$1</em>')
-    .replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 12px; color: #DDD6FE;">$1</code>');
+    .replace(/`([^`]+)`/g, '<code style="background: rgba(124, 58, 237, 0.1); padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 12px; color: var(--accent-primary); border: 1px solid var(--border-subtle);">$1</code>');
 }
 
 function switchEditorLanguage(newLang) {
