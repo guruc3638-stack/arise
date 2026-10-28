@@ -4,8 +4,40 @@
    ========================================================================== */
 
 const ARISE_DATA = {
-  // Current logged in user (System-generated read-only UID)
+  // Current learner state (Clean unauthenticated template by default; hydrated upon sign-in)
   currentUser: {
+    uid: "AR-UNAUTHENTICATED",
+    displayName: "Guest Learner",
+    handle: "guest",
+    college: "Institution not set",
+    district: "",
+    state: "Maharashtra",
+    avatar: "GL",
+    avatarBg: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)",
+    verifiedXp: 0,
+    rank: {
+      college: null,
+      district: null,
+      maharashtra: null,
+      india: null
+    },
+    rankDisplay: "Unranked",
+    rankMovement: "—",
+    solvedStats: {
+      total: 0,
+      easy: 0,
+      medium: 0,
+      hard: 0
+    },
+    acceptanceRate: "—",
+    coursesCompleted: 0,
+    privacySetting: "public",
+    recentSolves: [],
+    joinedDate: "October 2025"
+  },
+
+  // Seed reference profile for demo verification
+  demoUser: {
     uid: "ARISE-7K2M9Q",
     displayName: "Rohan Deshmukh",
     handle: "rohan_coder",
@@ -14,7 +46,7 @@ const ARISE_DATA = {
     state: "Maharashtra",
     avatar: "RD",
     avatarBg: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)",
-    verifiedXp: 10540, // Baseline: 148 verified solved problems (10,540 XP)
+    verifiedXp: 10540,
     rank: {
       college: 1,
       district: 2,
@@ -31,7 +63,8 @@ const ARISE_DATA = {
     },
     acceptanceRate: "92.4%",
     coursesCompleted: 3,
-    privacySetting: "public", // 'public' | 'friends' | 'private'
+    privacySetting: "public",
+    recentSolves: [],
     joinedDate: "October 2025"
   },
 
@@ -14332,22 +14365,62 @@ function syncProblemStatuses() {
   if (typeof ARISE_DATA === 'undefined' || !Array.isArray(ARISE_DATA.problems)) return;
 
   const user = ARISE_DATA.currentUser;
+  const isGuest = !user || !user.uid || user.uid === 'AR-UNAUTHENTICATED';
+  const isDemo = user && (user.uid === 'ARISE-7K2M9Q' || user.uid === 'AR-XYZ999');
+
+  // Rule: Unauthenticated guests always have 0 solved problems and 0 XP
+  if (isGuest) {
+    ARISE_DATA.problems.forEach(p => { p.status = 'Unsolved'; });
+    if (Array.isArray(ARISE_DATA.topics)) {
+      ARISE_DATA.topics.forEach(t => { t.userSolved = 0; t.solved = 0; });
+    }
+    if (user) {
+      user.verifiedXp = 0;
+      user.rankDisplay = 'Unranked';
+      if (user.rank) {
+        user.rank.college = null;
+        user.rank.district = null;
+        user.rank.maharashtra = null;
+        user.rank.india = null;
+      }
+      if (user.solvedStats) {
+        user.solvedStats.total = 0;
+        user.solvedStats.easy = 0;
+        user.solvedStats.medium = 0;
+        user.solvedStats.hard = 0;
+      }
+      user.recentSolves = [];
+    }
+    return;
+  }
+
   let savedSolved = [];
   let savedAttempted = [];
+  const uid = user.uid;
 
   try {
     if (typeof localStorage !== 'undefined') {
-      savedSolved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
-      savedAttempted = JSON.parse(localStorage.getItem('arise_attempted_problem_ids') || '[]');
+      const userSolvedKey = `arise_solved_problem_ids_${uid}`;
+      const userAttemptedKey = `arise_attempted_problem_ids_${uid}`;
+      const userXpKey = `arise_verified_xp_${uid}`;
+      const userRecentKey = `arise_recent_solves_${uid}`;
 
-      // Restore user verified XP if persisted
-      const storedXp = localStorage.getItem('arise_verified_xp');
-      if (storedXp !== null && storedXp !== undefined && !isNaN(Number(storedXp)) && Number(storedXp) > 0) {
-        if (user) user.verifiedXp = Number(storedXp);
+      savedSolved = JSON.parse(localStorage.getItem(userSolvedKey) || localStorage.getItem('arise_solved_problem_ids') || '[]');
+      savedAttempted = JSON.parse(localStorage.getItem(userAttemptedKey) || localStorage.getItem('arise_attempted_problem_ids') || '[]');
+
+      // Restore user verified XP if persisted and user hasn't already got it
+      const storedXp = localStorage.getItem(userXpKey) || localStorage.getItem('arise_verified_xp');
+      if (storedXp !== null && storedXp !== undefined && !isNaN(Number(storedXp)) && Number(storedXp) >= 0) {
+        const numXp = Number(storedXp);
+        if (user.verifiedXp === undefined || user.verifiedXp === null || user.verifiedXp === 0) {
+          user.verifiedXp = numXp;
+        } else {
+          user.verifiedXp = Math.max(user.verifiedXp, numXp);
+        }
       }
 
       // Restore recent solves if persisted
-      const storedRecent = localStorage.getItem('arise_recent_solves');
+      const storedRecent = localStorage.getItem(userRecentKey) || localStorage.getItem('arise_recent_solves');
       if (storedRecent && user) {
         try {
           const parsedRecent = JSON.parse(storedRecent);
@@ -14358,28 +14431,30 @@ function syncProblemStatuses() {
       }
 
       // Restore rank if persisted
-      const storedRank = localStorage.getItem('arise_user_rank');
+      const storedRank = localStorage.getItem(`arise_user_rank_${uid}`) || localStorage.getItem('arise_user_rank');
       if (storedRank && user) {
         try {
           user.rank = JSON.parse(storedRank);
         } catch (_) {}
       }
-      const storedRankDisplay = localStorage.getItem('arise_user_rank_display');
+      const storedRankDisplay = localStorage.getItem(`arise_user_rank_display_${uid}`) || localStorage.getItem('arise_user_rank_display');
       if (storedRankDisplay && user) {
         user.rankDisplay = storedRankDisplay;
       }
     }
   } catch (_) {}
 
-  // 1. Ensure baseline 148 problems (ARISE-P101 through ARISE-P248) are always included in savedSolved
-  const base148Problems = ARISE_DATA.problems.slice(0, 148);
-  base148Problems.forEach(p => {
-    if (!savedSolved.includes(p.id)) {
-      savedSolved.push(p.id);
-    }
-  });
+  // Only the specific demo accounts seed baseline 148 problems if their solved list is empty
+  if (isDemo && savedSolved.length === 0) {
+    const base148Problems = ARISE_DATA.problems.slice(0, 148);
+    base148Problems.forEach(p => {
+      if (!savedSolved.includes(p.id)) {
+        savedSolved.push(p.id);
+      }
+    });
+  }
 
-  // 2. If user has recentSolves or problems_solved list, merge them in as well
+  // If user has recentSolves, merge them into savedSolved
   if (user && Array.isArray(user.recentSolves)) {
     user.recentSolves.forEach(r => {
       if (r && r.id && !savedSolved.includes(r.id)) {
@@ -14388,7 +14463,7 @@ function syncProblemStatuses() {
     });
   }
 
-  // 3. Apply statuses to every problem
+  // Apply statuses to every problem
   ARISE_DATA.problems.forEach(p => {
     if (savedSolved.includes(p.id)) {
       p.status = 'Solved';
@@ -14399,23 +14474,22 @@ function syncProblemStatuses() {
     }
   });
 
-  // 4. Update user solved stats to match the solved problems count (148 baseline + any newly solved)
+  // Update user solved stats to match the solved problems count
   if (user && user.solvedStats) {
     const solvedProbs = ARISE_DATA.problems.filter(p => p.status === 'Solved');
-    const totalCount = solvedProbs.length;
-    user.solvedStats.total = totalCount;
+    user.solvedStats.total = solvedProbs.length;
     user.solvedStats.easy = solvedProbs.filter(p => p.difficulty === 'Easy').length;
     user.solvedStats.medium = solvedProbs.filter(p => p.difficulty === 'Medium').length;
     user.solvedStats.hard = solvedProbs.filter(p => p.difficulty === 'Hard').length;
 
-    // Calculate verified XP: baseline 10,540 XP + each newly solved problem's XP
+    // Calculate verified XP: sum of verified XP from actually solved problems
     const calculatedXp = solvedProbs.reduce((sum, prob) => sum + (prob.verifiedXp || 40), 0);
     if (!user.verifiedXp || user.verifiedXp < calculatedXp) {
       user.verifiedXp = calculatedXp;
     }
   }
 
-  // 5. Update topic mastery counts
+  // Update topic mastery counts
   if (Array.isArray(ARISE_DATA.topics)) {
     ARISE_DATA.topics.forEach(t => {
       const tName = (t.name || '').trim().toLowerCase();
@@ -14429,23 +14503,27 @@ function syncProblemStatuses() {
     });
   }
 
-  // 6. Ensure localStorage is in sync
+  // Ensure user-scoped and active session localStorage is in sync
   try {
-    if (typeof localStorage !== 'undefined') {
+    if (typeof localStorage !== 'undefined' && uid) {
+      localStorage.setItem(`arise_solved_problem_ids_${uid}`, JSON.stringify(savedSolved));
       localStorage.setItem('arise_solved_problem_ids', JSON.stringify(savedSolved));
       if (user && user.verifiedXp !== undefined) {
+        localStorage.setItem(`arise_verified_xp_${uid}`, String(user.verifiedXp));
         localStorage.setItem('arise_verified_xp', String(user.verifiedXp));
       }
       if (user && user.solvedStats) {
+        localStorage.setItem(`arise_solved_stats_${uid}`, JSON.stringify(user.solvedStats));
         localStorage.setItem('arise_solved_stats', JSON.stringify(user.solvedStats));
       }
       if (user && user.recentSolves) {
+        localStorage.setItem(`arise_recent_solves_${uid}`, JSON.stringify(user.recentSolves));
         localStorage.setItem('arise_recent_solves', JSON.stringify(user.recentSolves));
       }
     }
   } catch (_) {}
 
-  // 7. Synchronize leaderboard position
+  // Synchronize leaderboard position
   if (user && typeof syncLeaderboardWithUser === 'function') {
     syncLeaderboardWithUser(user);
   }

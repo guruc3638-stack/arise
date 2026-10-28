@@ -56,6 +56,26 @@ const AriseAuth = {
     // 2. Restore cached session on refresh
     this.restoreSession();
 
+    // 2b. If no session is active, ensure clean guest state
+    if (!this.isAuthenticated()) {
+      this.clearLocalSession();
+      if (typeof resetAllTopicSolves === 'function') {
+        resetAllTopicSolves();
+      }
+      if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
+        ARISE_DATA.currentUser.uid = "AR-UNAUTHENTICATED";
+        ARISE_DATA.currentUser.displayName = "Guest Learner";
+        ARISE_DATA.currentUser.verifiedXp = 0;
+        ARISE_DATA.currentUser.rankDisplay = "Unranked";
+        if (ARISE_DATA.currentUser.solvedStats) {
+          ARISE_DATA.currentUser.solvedStats.total = 0;
+          ARISE_DATA.currentUser.solvedStats.easy = 0;
+          ARISE_DATA.currentUser.solvedStats.medium = 0;
+          ARISE_DATA.currentUser.solvedStats.hard = 0;
+        }
+      }
+    }
+
     // 3. Listen for Supabase Auth state changes if available
     if (this.client && this.client.auth) {
       try {
@@ -140,8 +160,14 @@ const AriseAuth = {
       localStorage.removeItem('arise_session');
       localStorage.removeItem('arise_token');
       localStorage.removeItem('arise_profile');
-      // Clear any cached query states
+      // Clear active session solve & stats keys (leaves user-scoped keys arise_*_<uid> intact for re-login)
       localStorage.removeItem('arise_recent_solves');
+      localStorage.removeItem('arise_verified_xp');
+      localStorage.removeItem('arise_solved_stats');
+      localStorage.removeItem('arise_solved_problem_ids');
+      localStorage.removeItem('arise_attempted_problem_ids');
+      localStorage.removeItem('arise_user_rank');
+      localStorage.removeItem('arise_user_rank_display');
       if (typeof ARISE_DATA !== 'undefined') {
         ARISE_DATA.notifications = [];
       }
@@ -175,30 +201,54 @@ const AriseAuth = {
         ARISE_DATA.currentUser.privacySetting = 'public';
       }
 
+      const uid = profile.uid || "AR-PENDING";
+      let userSolvedIds = [];
+      let userXp = Number(profile.verified_xp || 0);
+      let userSolvedCount = Number(profile.solved_count || 0);
+
+      // Check user-scoped local storage for persisted solves
+      try {
+        if (typeof localStorage !== 'undefined' && uid && uid !== 'AR-UNAUTHENTICATED') {
+          const scopedSolved = JSON.parse(localStorage.getItem(`arise_solved_problem_ids_${uid}`) || '[]');
+          if (Array.isArray(scopedSolved) && scopedSolved.length > 0) {
+            userSolvedIds = scopedSolved;
+            if (userSolvedIds.length > userSolvedCount) {
+              userSolvedCount = userSolvedIds.length;
+            }
+          }
+          const scopedXp = Number(localStorage.getItem(`arise_verified_xp_${uid}`) || 0);
+          if (scopedXp > userXp) {
+            userXp = scopedXp;
+          }
+          const scopedStats = JSON.parse(localStorage.getItem(`arise_solved_stats_${uid}`) || 'null');
+          if (scopedStats && Number(scopedStats.total) > userSolvedCount) {
+            userSolvedCount = Number(scopedStats.total);
+          }
+        }
+      } catch (_) {}
+
       // Authoritative on-demand stats from xp_ledger (Rule 4)
-      const verifiedXp = Number(profile.verified_xp || 0);
-      ARISE_DATA.currentUser.verifiedXp = verifiedXp;
-      ARISE_DATA.currentUser.rankDisplay = verifiedXp === 0 ? "Unranked" : (profile.rank_state ? `#${profile.rank_state}` : "Unranked");
+      ARISE_DATA.currentUser.verifiedXp = userXp;
+      ARISE_DATA.currentUser.rankDisplay = userXp === 0 ? "Unranked" : (profile.rank_state ? `#${profile.rank_state}` : "Unranked");
       ARISE_DATA.currentUser.rank = {
-        college: verifiedXp === 0 ? null : (profile.rank_college || null),
-        district: verifiedXp === 0 ? null : (profile.rank_district || null),
-        maharashtra: verifiedXp === 0 ? null : (profile.rank_state || null),
-        india: verifiedXp === 0 ? null : (profile.rank_india || null),
+        college: userXp === 0 ? null : (profile.rank_college || null),
+        district: userXp === 0 ? null : (profile.rank_district || null),
+        maharashtra: userXp === 0 ? null : (profile.rank_state || null),
+        india: userXp === 0 ? null : (profile.rank_india || null),
       };
 
-      const solvedCount = Number(profile.solved_count || 0);
       const practiceCount = Number(profile.practice_count || 0);
       ARISE_DATA.currentUser.solvedStats = {
-        total: solvedCount,
+        total: userSolvedCount,
         easy: 0,
         medium: 0,
         hard: 0
       };
       ARISE_DATA.currentUser.coursesCompleted = Number(profile.completed_courses_count || 0);
-      ARISE_DATA.currentUser.acceptanceRate = practiceCount > 0 ? `${Math.round((solvedCount / practiceCount) * 100)}%` : "—";
+      ARISE_DATA.currentUser.acceptanceRate = practiceCount > 0 ? `${Math.round((userSolvedCount / practiceCount) * 100)}%` : "—";
 
-      // If user has 0 XP, enforce clean empty state collections
-      if (verifiedXp === 0) {
+      // If user has 0 XP and 0 solved problems, enforce clean empty state collections
+      if (userXp === 0 && userSolvedIds.length === 0) {
         ARISE_DATA.currentUser.recentSolves = [];
         if (typeof resetAllTopicSolves === 'function') {
           resetAllTopicSolves();
@@ -478,24 +528,69 @@ const AriseAuth = {
       } catch (e) {}
     }
 
-    // 2. Clear all local tokens, storage, and state
+    // 2. Clear all local tokens, storage, and active state
     this.clearLocalSession();
 
-    // 3. Reset ARISE_DATA.currentUser to empty unauthenticated template
+    // 3. Reset all in-memory solved problems & topics
+    if (typeof resetAllTopicSolves === 'function') {
+      resetAllTopicSolves();
+    }
+
+    // 4. Reset ARISE_DATA.currentUser to empty unauthenticated template
     if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
       ARISE_DATA.currentUser.uid = "AR-UNAUTHENTICATED";
       ARISE_DATA.currentUser.displayName = "Guest Learner";
+      ARISE_DATA.currentUser.handle = "guest";
+      ARISE_DATA.currentUser.college = "Institution not set";
+      ARISE_DATA.currentUser.district = "";
+      ARISE_DATA.currentUser.state = "Maharashtra";
+      ARISE_DATA.currentUser.avatar = "GL";
       ARISE_DATA.currentUser.verifiedXp = 0;
       ARISE_DATA.currentUser.rankDisplay = "Unranked";
+      ARISE_DATA.currentUser.rankMovement = "—";
+      ARISE_DATA.currentUser.rank = {
+        college: null,
+        district: null,
+        maharashtra: null,
+        india: null
+      };
+      ARISE_DATA.currentUser.solvedStats = {
+        total: 0,
+        easy: 0,
+        medium: 0,
+        hard: 0
+      };
+      ARISE_DATA.currentUser.recentSolves = [];
+      ARISE_DATA.currentUser.coursesCompleted = 0;
+      ARISE_DATA.currentUser.acceptanceRate = "—";
     }
 
-    // 4. Update browser history to landing root
+    // 5. Clear AriseState cached solves & user data
+    if (typeof AriseState !== 'undefined') {
+      AriseState.submissionsHistory = {};
+      AriseState.recentSolves = [];
+      AriseState.unlockedSolutions = {};
+      AriseState.userNotifications = [];
+      AriseState.friendsList = [];
+    }
+
+    // 6. Clean leaderboard entries for current user
+    if (typeof ARISE_DATA !== 'undefined' && ARISE_DATA.leaderboards) {
+      ['college', 'district', 'maharashtra', 'india'].forEach(scope => {
+        if (Array.isArray(ARISE_DATA.leaderboards[scope])) {
+          ARISE_DATA.leaderboards[scope] = ARISE_DATA.leaderboards[scope].filter(i => !i.isCurrentUser && i.uid !== 'AR-UNAUTHENTICATED');
+        }
+      });
+    }
+
+    // 7. Update browser history to landing root
     if (window.history && window.history.replaceState) {
       window.history.replaceState(null, '', '#/');
     }
 
-    // 5. Redirect directly to landing screen
+    // 8. Redirect directly to landing screen and notify
     AriseState.setScreen('landing');
+    AriseState.notify();
 
     if (typeof showToast === 'function') {
       showToast("Signed out successfully.", "info");

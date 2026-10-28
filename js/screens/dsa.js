@@ -1562,12 +1562,12 @@ function handleJudgeEvaluationResult(result, p, lang) {
           ARISE_DATA.currentUser.verifiedXp = (ARISE_DATA.currentUser.verifiedXp || 0) + award;
         }
         if (!ARISE_DATA.currentUser.solvedStats) {
-          ARISE_DATA.currentUser.solvedStats = { total: 148, easy: 40, medium: 50, hard: 58 };
+          ARISE_DATA.currentUser.solvedStats = { total: 0, easy: 0, medium: 0, hard: 0 };
         }
-        ARISE_DATA.currentUser.solvedStats.total += 1;
-        if (p.difficulty === 'Easy') ARISE_DATA.currentUser.solvedStats.easy += 1;
-        else if (p.difficulty === 'Medium') ARISE_DATA.currentUser.solvedStats.medium += 1;
-        else if (p.difficulty === 'Hard') ARISE_DATA.currentUser.solvedStats.hard += 1;
+        ARISE_DATA.currentUser.solvedStats.total = (ARISE_DATA.currentUser.solvedStats.total || 0) + 1;
+        if (p.difficulty === 'Easy') ARISE_DATA.currentUser.solvedStats.easy = (ARISE_DATA.currentUser.solvedStats.easy || 0) + 1;
+        else if (p.difficulty === 'Medium') ARISE_DATA.currentUser.solvedStats.medium = (ARISE_DATA.currentUser.solvedStats.medium || 0) + 1;
+        else if (p.difficulty === 'Hard') ARISE_DATA.currentUser.solvedStats.hard = (ARISE_DATA.currentUser.solvedStats.hard || 0) + 1;
 
         if (!Array.isArray(ARISE_DATA.currentUser.recentSolves)) {
           ARISE_DATA.currentUser.recentSolves = [];
@@ -1583,20 +1583,15 @@ function handleJudgeEvaluationResult(result, p, lang) {
           });
         }
 
+        p.status = 'Solved';
+
         // Dynamically update and re-rank current user on the official Leaderboard
         if (typeof syncLeaderboardWithUser === 'function') {
           syncLeaderboardWithUser(ARISE_DATA.currentUser);
-        } else if (ARISE_DATA.currentUser.rankDisplay === 'Unranked' || !ARISE_DATA.currentUser.rank || !ARISE_DATA.currentUser.rank.maharashtra) {
-          ARISE_DATA.currentUser.rank = {
-            college: 1,
-            district: 2,
-            maharashtra: 4,
-            india: 18
-          };
-          ARISE_DATA.currentUser.rankDisplay = '#4';
         }
 
-        // Permanent storage in localStorage for instant dashboard and refresh persistence
+        // Permanent storage in localStorage: scoped to user ID for persistence across login/logout, and active keys
+        const uid = ARISE_DATA.currentUser.uid;
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('arise_verified_xp', String(ARISE_DATA.currentUser.verifiedXp));
@@ -1607,6 +1602,24 @@ function handleJudgeEvaluationResult(result, p, lang) {
             }
             if (ARISE_DATA.currentUser.rankDisplay) {
               localStorage.setItem('arise_user_rank_display', ARISE_DATA.currentUser.rankDisplay);
+            }
+
+            if (uid && uid !== 'AR-UNAUTHENTICATED') {
+              localStorage.setItem(`arise_verified_xp_${uid}`, String(ARISE_DATA.currentUser.verifiedXp));
+              localStorage.setItem(`arise_solved_stats_${uid}`, JSON.stringify(ARISE_DATA.currentUser.solvedStats));
+              localStorage.setItem(`arise_recent_solves_${uid}`, JSON.stringify(ARISE_DATA.currentUser.recentSolves));
+              if (ARISE_DATA.currentUser.rank) {
+                localStorage.setItem(`arise_user_rank_${uid}`, JSON.stringify(ARISE_DATA.currentUser.rank));
+              }
+              if (ARISE_DATA.currentUser.rankDisplay) {
+                localStorage.setItem(`arise_user_rank_display_${uid}`, ARISE_DATA.currentUser.rankDisplay);
+              }
+              let savedSolved = JSON.parse(localStorage.getItem(`arise_solved_problem_ids_${uid}`) || localStorage.getItem('arise_solved_problem_ids') || '[]');
+              if (!savedSolved.includes(p.id)) {
+                savedSolved.push(p.id);
+                localStorage.setItem(`arise_solved_problem_ids_${uid}`, JSON.stringify(savedSolved));
+                localStorage.setItem('arise_solved_problem_ids', JSON.stringify(savedSolved));
+              }
             }
           }
         } catch (_) {}

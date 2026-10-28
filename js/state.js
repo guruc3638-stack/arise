@@ -687,10 +687,12 @@ const AriseState = {
     try {
       const stats = await this.apiRequest('/me/practice-stats');
       if (stats && typeof ARISE_DATA !== 'undefined' && ARISE_DATA.currentUser) {
+        const uid = ARISE_DATA.currentUser.uid;
+        const isDemo = (uid === 'ARISE-7K2M9Q' || uid === 'AR-XYZ999');
         const backendXp = Number(stats.total_verified_xp || 0);
         let localXp = 0;
         try {
-          localXp = Number(localStorage.getItem('arise_verified_xp') || 0);
+          localXp = Number(localStorage.getItem(`arise_verified_xp_${uid}`) || localStorage.getItem('arise_verified_xp') || 0);
         } catch (_) {}
         ARISE_DATA.currentUser.verifiedXp = Math.max(backendXp, localXp);
 
@@ -698,14 +700,16 @@ const AriseState = {
         const validBackendSolves = (stats.problems_solved || []).filter(id => validProblemIds.has(String(id).toUpperCase()));
         const solvedSet = new Set(validBackendSolves.map(id => String(id).toUpperCase()));
 
-        // Also merge baseline 148 solves and any verified solve IDs from localStorage
-        const base148 = (ARISE_DATA.problems || []).slice(0, 148);
-        base148.forEach(p => solvedSet.add(String(p.id).toUpperCase()));
+        // ONLY merge baseline 148 solves if this is specifically the demo user
+        if (isDemo && solvedSet.size === 0) {
+          const base148 = (ARISE_DATA.problems || []).slice(0, 148);
+          base148.forEach(p => solvedSet.add(String(p.id).toUpperCase()));
+        }
 
         let localSaved = [];
         try {
           if (typeof localStorage !== 'undefined') {
-            localSaved = JSON.parse(localStorage.getItem('arise_solved_problem_ids') || '[]');
+            localSaved = JSON.parse(localStorage.getItem(`arise_solved_problem_ids_${uid}`) || localStorage.getItem('arise_solved_problem_ids') || '[]');
           }
         } catch (_) {}
         localSaved.forEach(id => {
@@ -718,6 +722,8 @@ const AriseState = {
           ARISE_DATA.problems.forEach(p => {
             if (solvedSet.has(String(p.id).toUpperCase())) {
               p.status = 'Solved';
+            } else {
+              p.status = 'Unsolved';
             }
           });
         }
@@ -744,12 +750,15 @@ const AriseState = {
           });
         }
 
-        // Persist strictly valid solved problems to localStorage and sync leaderboards
+        // Persist strictly valid solved problems to user-scoped and active localStorage and sync leaderboards
         try {
-          if (typeof localStorage !== 'undefined') {
+          if (typeof localStorage !== 'undefined' && uid) {
             const cleanArray = Array.from(solvedSet);
+            localStorage.setItem(`arise_solved_problem_ids_${uid}`, JSON.stringify(cleanArray));
             localStorage.setItem('arise_solved_problem_ids', JSON.stringify(cleanArray));
+            localStorage.setItem(`arise_verified_xp_${uid}`, String(ARISE_DATA.currentUser.verifiedXp));
             localStorage.setItem('arise_verified_xp', String(ARISE_DATA.currentUser.verifiedXp));
+            localStorage.setItem(`arise_solved_stats_${uid}`, JSON.stringify(ARISE_DATA.currentUser.solvedStats));
             localStorage.setItem('arise_solved_stats', JSON.stringify(ARISE_DATA.currentUser.solvedStats));
           }
         } catch (_) {}

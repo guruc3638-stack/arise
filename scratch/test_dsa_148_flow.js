@@ -48,6 +48,8 @@ function runTest() {
   vm.runInContext(dsaJs, context);
 
   const { ARISE_DATA, AriseState } = context;
+  ARISE_DATA.currentUser = Object.assign({}, ARISE_DATA.demoUser);
+  context.syncProblemStatuses();
 
   // 1. Initial State Check
   console.log('1. Checking Initial Baseline State:');
